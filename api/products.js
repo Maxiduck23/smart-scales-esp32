@@ -27,8 +27,9 @@ export default async function handler(req, res) {
         const timeout = setTimeout(() => controller.abort(), 8000); // Zvýšeno na 8s
 
         const response = await fetch(
-          `https://cz.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,image_front_url,code&page_size=10`,
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,image_front_url,code&page_size=10`,
           {
+
             signal: controller.signal,
             headers: { 'User-Agent': 'SmartScales/1.0 (school project; tvuj@email.cz)' }
           }
