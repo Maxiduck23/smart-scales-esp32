@@ -206,21 +206,29 @@ async function searchFood() {
                 </div>
             </div>
             <div style="display:flex;gap:6px;align-items:center;margin-top:8px">
-                <input type="number" id="grams-${p.barcode}" value="100" min="1"/>
+                <input type="number" id="grams-${p.barcode || p.name}" value="100" min="1"/>
                 <span>g</span>
-                <button onclick="addMeal('${p.barcode}', '${p.name}')">+ Přidat</button>
+                <button onclick="addMeal('${p.id}', '${p.barcode}', '${p.name}')">+ Přidat</button> 
             </div>
         </div>`).join('');
 }
 
-async function addMeal(barcode, name) {
-    const products = await api(`products?q=${encodeURIComponent(name)}`);
-    const product = products?.find(p => p.barcode === barcode);
-    if (!product?.id) return alert('Produkt nenalezen v databázi');
-    const grams = parseInt(document.getElementById(`grams-${barcode}`).value);
+async function addMeal(productId, barcode, name) {
+    let id = productId;
+
+    // Если id нет — ищем по имени
+    if (!id || id === 'null' || id === 'undefined') {
+        const found = await api(`products?q=${encodeURIComponent(name)}`);
+        const product = found?.find(p => p.barcode === barcode || p.name === name);
+        id = product?.id;
+    }
+
+    if (!id) return alert('Produkt nenalezen v databázi');
+
+    const grams = parseInt(document.getElementById(`grams-${barcode || name}`).value);
     await api('meals', {
         method: 'POST',
-        body: JSON.stringify({ product_id: product.id, weight_g: grams, meal_type: 'snack' })
+        body: JSON.stringify({ product_id: id, weight_g: grams, meal_type: 'snack' })
     });
     await loadMeals();
 }
