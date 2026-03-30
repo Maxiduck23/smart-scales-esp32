@@ -1,8 +1,8 @@
 // Zpracování denního příjmu jídla
-const supabase = require('./_supabase');
-const { requireAuth } = require('./_middleware');
+import supabase from './_supabase.js';
+import { requireAuth } from './_middleware.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // Ověření JWT tokenu
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ error: 'Nejste přihlášeni' });
