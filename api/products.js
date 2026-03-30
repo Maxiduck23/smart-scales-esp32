@@ -23,28 +23,17 @@ export default async function handler(req, res) {
 
     // 4. Volání OpenFoodFacts API
     const response = await fetch(
-      `https://cz.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,image_front_url,code&page_size=10`
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,image_front_url,code&page_size=10`,
+      {
+        headers: {
+          'User-Agent': 'SmartScales/1.0 (school project; polyvodamaksym@gmail.com)'
+        }
+      }
     );
 
-    if (!response.ok) return res.status(502).json({ error: 'API nedostupné' });
+    console.log('OFF status:', response.status);
+    if (!response.ok) return res.status(502).json({ error: 'API nedostupné', status: response.status });
 
-    // --- TADY ZAČÍNÁ DEBUG ---
-    console.log('--- API DEBUG ---');
-    console.log('Status:', response.status); // Vypíše např. 200, 404, 500
-    console.log('OK:', response.ok);         // Vypíše true/false
-
-    if (!response.ok) {
-      // Pokud API vrátí chybu, zkusíme přečíst text chyby
-      const errorText = await response.text();
-      console.error('Chybová zpráva od API:', errorText);
-
-      return res.status(502).json({
-        error: 'API Food selhalo',
-        status: response.status,
-        details: errorText
-      });
-    }
-    // --- KONEC DEBUGU ---
     const d = await response.json();
 
     // 5. Zpracování dat - použito 'p' pro iteraci
