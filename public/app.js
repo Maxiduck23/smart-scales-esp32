@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════
 const getToken = () => localStorage.getItem('token');
 const saveToken = t => localStorage.setItem('token', t);
-
+let searchTimeout;
 function logout() {
     localStorage.removeItem('token');
     router();
