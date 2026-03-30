@@ -19,14 +19,14 @@ export default async function handler(req, res) {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Missing query' });
 
-    // 1. Supabase cache
+    // 1. Nejprve zkusíme Supabase (lokální cache)
     const { data: local, error: dbError } = await supabase
       .from('products').select('*').ilike('name', `%${q}%`).limit(10);
 
     if (dbError) throw dbError;
     if (local?.length > 0) return res.json(local);
 
-    // 2. OpenFoodFacts s retry
+    // 2. Pokud nic není, zkusíme OpenFoodFacts (s retry)
     let products = [];
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 
         if (response.ok) {
           const d = await response.json();
-          products = (d.products || [])
+          const found = (d.products || [])
             .filter(p => p.nutriments?.['energy-kcal_100g'])
             .map(p => ({
               name: cleanName(p.product_name),
@@ -57,20 +57,29 @@ export default async function handler(req, res) {
               fiber_g: p.nutriments['fiber_100g'] || null,
             }));
 
-          if (products.length > 0) {
-            const withBarcode = products.filter(p => p.barcode);
-            const withoutBarcode = products.filter(p => !p.barcode);
+          if (found.length > 0) {
+            // ROZDĚLENÍ A ULOŽENÍ (pouze jednou)
+            const withBarcode = found.filter(p => p.barcode);
+            const withoutBarcode = found.filter(p => !p.barcode);
 
-            if (withBarcode.length > 0)
+            if (withBarcode.length > 0) {
               await supabase.from('products').upsert(withBarcode, { onConflict: 'barcode' });
+            }
 
             for (const p of withoutBarcode) {
               const { data: exists } = await supabase
                 .from('products').select('id').ilike('name', p.name).limit(1);
-              if (!exists?.length)
-                await supabase.from('products').insert(p);
+              if (!exists?.length) await supabase.from('products').insert(p);
             }
-            break; // успех — выходим из retry
+
+            // NAČTENÍ FINÁLNÍCH DAT S ID (tohle je důležité pro frontend)
+            const { data: saved } = await supabase
+              .from('products').select('*').ilike('name', `%${q}%`).limit(10);
+
+            if (saved?.length > 0) {
+              products = saved;
+              break; // Máme data, končíme retry cyklus
+            }
           }
         }
       } catch (err) {
