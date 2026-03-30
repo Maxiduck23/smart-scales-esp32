@@ -18,7 +18,8 @@ body {
 #app {
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    /* ← bylo center */
     justify-content: center;
     padding: 20px;
 }
