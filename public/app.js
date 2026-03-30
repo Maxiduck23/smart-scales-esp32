@@ -79,3 +79,19 @@ async function deleteMeal(id) {
     await api('meals', { method: 'DELETE', body: JSON.stringify({ meal_id: id }) });
     await loadMeals();
 }
+async function searchFood() {
+    const q = document.getElementById('search-input').value.trim();
+    if (!q) return;
+
+    const results = document.getElementById('search-results');
+    results.innerHTML = '<p>Hledám...</p>';
+
+    const data = await api(`products?q=${encodeURIComponent(q)}`);
+    console.log('search result:', data);  // ← добавь это
+
+    if (!data?.length) {
+        results.innerHTML = '<p>Nic nenalezeno</p>';
+        return;
+    }
+    // ...
+}

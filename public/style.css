@@ -1,4 +1,6 @@
-/* Základní reset */
+/* ═══════════════════════════════════════
+   ZÁKLADNÍ NASTAVENÍ (RESET & BASE)
+   ═══════════════════════════════════════ */
 * {
     margin: 0;
     padding: 0;
@@ -6,8 +8,11 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: #f0f4f0;
+    /* Moderní systémové písmo */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f4f7f4;
+    color: #333;
+    line-height: 1.5;
 }
 
 #app {
@@ -15,43 +20,52 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
 }
 
-/* Karta (přihlášení / registrace) */
+/* ═══════════════════════════════════════
+   KARTA (LOGIN / REGISTRACE)
+   ═══════════════════════════════════════ */
 .card {
     background: white;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 40px;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .card h1 {
     color: #1a6b3a;
     margin-bottom: 8px;
     font-size: 28px;
+    text-align: center;
 }
 
 .card p {
     color: #666;
     margin-bottom: 24px;
+    text-align: center;
 }
 
-/* Formulářové prvky */
+/* ═══════════════════════════════════════
+   FORMULÁŘOVÉ PRVKY
+   ═══════════════════════════════════════ */
 input {
     width: 100%;
     padding: 12px 16px;
-    margin-bottom: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 2px solid #edf2ed;
+    border-radius: 10px;
     font-size: 16px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
 }
 
 input:focus {
     border-color: #1a6b3a;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(26, 107, 58, 0.1);
 }
 
 button {
@@ -60,119 +74,30 @@ button {
     background: #1a6b3a;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: background 0.2s;
-}
-
-/* Vyhledávání jídla */
-.nutrition-card input {
-    width: auto;
-    margin-bottom: 0;
-}
-
-.nutrition-card button {
-    width: auto;
-    padding: 10px 16px;
-    font-size: 14px;
-}
-
-#search-results {
-    margin-top: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Položka jídla (výsledek hledání i seznam) */
-.meal-item {
-    background: #f8f8f8;
-    border-radius: 10px;
-    padding: 12px;
-    border-left: 3px solid #1a6b3a;
-}
-
-.meal-item strong {
-    font-size: 14px;
-    color: #222;
-}
-
-.meal-item small {
-    color: #888;
-    font-size: 12px;
-}
-
-.meal-item input[type="number"] {
-    width: 70px;
-    padding: 6px 10px;
-    font-size: 14px;
-    margin-bottom: 0;
-}
-
-.meal-item button {
-    width: auto;
-    padding: 6px 14px;
-    font-size: 13px;
-}
-
-/* Tlačítko smazání */
-.meal-item button[style*="e74c3c"] {
-    background: #e74c3c;
-    padding: 6px 10px;
-}
-
-.meal-item button[style*="e74c3c"]:hover {
-    background: #c0392b;
-}
-
-/* Seznam dnešních jídel */
-#meals-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-#meals-list p {
-    color: #aaa;
-    font-size: 14px;
-    text-align: center;
-    padding: 12px;
+    transition: all 0.2s ease;
 }
 
 button:hover {
     background: #145230;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 107, 58, 0.2);
 }
 
-/* Odkaz pod formulářem */
-.link {
-    text-align: center;
-    margin-top: 16px;
-    color: #666;
+button:active {
+    transform: translateY(0);
 }
 
-.link a {
-    color: #1a6b3a;
-    cursor: pointer;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-/* Chybová hláška */
-.error {
-    color: #c0392b;
-    margin-bottom: 12px;
-    font-size: 14px;
-    display: none;
-}
-
-/* Dashboard */
+/* ═══════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════ */
 .dashboard {
-    padding: 24px;
+    width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    width: 100%;
 }
 
 .header {
@@ -182,84 +107,167 @@ button:hover {
     margin-bottom: 24px;
 }
 
-/* Zobrazení váhy */
+/* Zobrazení váhy (Hero sekce) */
 .weight-display {
-    background: #1a6b3a;
+    background: linear-gradient(135deg, #1a6b3a 0%, #145230 100%);
     color: white;
-    border-radius: 16px;
-    padding: 32px;
+    border-radius: 24px;
+    padding: 40px;
     text-align: center;
     margin-bottom: 24px;
+    box-shadow: 0 8px 20px rgba(26, 107, 58, 0.2);
 }
 
 .weight-display .grams {
-    font-size: 64px;
-    font-weight: bold;
+    font-size: 72px;
+    font-weight: 800;
+    letter-spacing: -2px;
 }
 
 .weight-display .label {
-    font-size: 16px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     opacity: 0.8;
 }
 
-/* Karta výživových hodnot */
+/* ═══════════════════════════════════════
+   VYHLEDÁVÁNÍ A NUTRIČNÍ KARTY
+   ═══════════════════════════════════════ */
 .nutrition-card {
     background: white;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+/* Flexbox pro řádek hledání */
+.search-group {
+    display: flex;
+    gap: 10px;
     margin-bottom: 16px;
 }
 
-.nutrition-card h3 {
-    color: #333;
-    margin-bottom: 16px;
+.search-group input {
+    margin-bottom: 0;
+    flex: 1;
 }
 
-/* Progress bary */
+.search-group button {
+    width: auto;
+}
+
+/* Položka jídla v seznamu */
+.meal-item {
+    background: #fcfdfc;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #edf2ed;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 8px;
+    transition: transform 0.2s;
+}
+
+.meal-item:hover {
+    border-color: #1a6b3a;
+}
+
+.meal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Menší vstupy pro gramy v seznamu */
+.meal-item input[type="number"] {
+    width: 80px;
+    margin-bottom: 0;
+    padding: 8px;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════
+   PROGRESS BARY
+   ═══════════════════════════════════════ */
 .bar-row {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     gap: 12px;
 }
 
 .bar-label {
-    width: 100px;
+    width: 90px;
     font-size: 14px;
-    color: #666;
+    font-weight: 600;
+    color: #555;
 }
 
 .bar-track {
     flex: 1;
     background: #f0f0f0;
-    border-radius: 99px;
-    height: 12px;
+    border-radius: 10px;
+    height: 10px;
+    overflow: hidden;
 }
 
 .bar-fill {
-    height: 12px;
-    border-radius: 99px;
-    transition: width 0.5s;
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bar-value {
-    width: 80px;
-    font-size: 13px;
+    width: 85px;
+    font-size: 12px;
+    font-weight: bold;
     color: #333;
     text-align: right;
 }
 
-/* Tlačítko odhlášení */
+/* ═══════════════════════════════════════
+   OSTATNÍ (CHYBY, ODKAZY, ODHLÁŠENÍ)
+   ═══════════════════════════════════════ */
 .logout-btn {
     background: transparent;
-    color: #c0392b;
-    border: 2px solid #c0392b;
+    color: #e74c3c;
+    border: 2px solid #fceae8;
     width: auto;
     padding: 8px 16px;
     font-size: 14px;
 }
 
 .logout-btn:hover {
-    background: #c0392b;
+    background: #e74c3c;
     color: white;
+    border-color: #e74c3c;
+}
+
+.error {
+    background: #fdf2f2;
+    color: #c0392b;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    border-left: 4px solid #c0392b;
+    display: none;
+}
+
+.link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.link a {
+    color: #1a6b3a;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.link a:hover {
+    text-decoration: underline;
 }
