@@ -8,8 +8,7 @@ export default async function handler(req, res) {
   const { data: local } = await supabase
     .from('products').select('*').ilike('name', `%${q}%`).limit(10);
   if (local?.length > 0) return res.json(local);
-  const r = await fetch(`https://cz.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&lc=cs&fields=product_name,nutriments,image_front_url,code&page_size=10`);
-  if (!r.ok) return res.status(502).json({ error: 'Open Food Facts nedostupný' });
+  const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,image_front_url,code&page_size=10`);
   const text = await r.text();
   const d = JSON.parse(text);
   const products = (d.products || [])
