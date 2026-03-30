@@ -51,11 +51,33 @@ export default async function handler(req, res) {
               carbs_g: p.nutriments['carbohydrates_100g'] || null,
               fiber_g: p.nutriments['fiber_100g'] || null,
             }));
+          const products = (d.products || [])
+            .filter(p => p.nutriments?.['energy-kcal_100g'])
+            .map(p => ({
+              name: (p.product_name || 'Neznámý produkt')
+                .replace(/&quot;/gi, '')
+                .replace(/&amp;/gi, '&')
+                .replace(/&lt;/gi, '<')
+                .replace(/&gt;/gi, '>')
+                .replace(/\s+/g, ' ')
+                .trim(),
+            }));
+          const withBarcode = products.filter(p => p.barcode);
+          const withoutBarcode = products.filter(p => !p.barcode);
 
-          if (items.length > 0) {
-            products = items;
-            await supabase.from('products').upsert(products, { onConflict: 'barcode' });
-            break; // Úspěch -> končíme cyklus
+          // С штрихкодом — upsert как обычно
+          if (withBarcode.length > 0)
+            await supabase.from('products').upsert(withBarcode, { onConflict: 'barcode' });
+
+          // Без штрихкода — только если такого названия ещё нет
+          for (const p of withoutBarcode) {
+            const { data: exists } = await supabase
+              .from('products')
+              .select('id')
+              .ilike('name', p.name)
+              .limit(1);
+            if (!exists?.length)
+              await supabase.from('products').insert(p);
           }
         }
       } catch (err) {
