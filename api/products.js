@@ -9,8 +9,6 @@ export default async function handler(req, res) {
     .from('products').select('*').ilike('name', `%${q}%`).limit(10);
   if (local?.length > 0) return res.json(local);
   const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,image_front_url,code&page_size=10`);
-  const text = await r.text();
-  const d = JSON.parse(text);
   const products = (d.products || [])
     .filter(p => p.nutriments?.['energy-kcal_100g'])
     .map(p => ({
