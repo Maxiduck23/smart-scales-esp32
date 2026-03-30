@@ -9,8 +9,16 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/style.css",
+      "destination": "/public/style.css"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/public/app.js"
+    },
+    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/public/index.html"
     }
   ]
 }
