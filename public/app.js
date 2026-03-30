@@ -158,7 +158,23 @@ async function renderDashboard(app) {
       </div>
     </div>`;
 
-    setInterval(async () => {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchFood();
+            }, 500);
+        });
+    }
+
+    // Interval pro váhu
+    const weightInterval = setInterval(async () => {
+        // Kontrola, zda jsme stále v dashboardu, jinak interval zastavíme
+        if (!document.getElementById('weight-display')) {
+            clearInterval(weightInterval);
+            return;
+        }
         const data = await api('weight');
         if (data?.grams != null) {
             document.getElementById('weight-display').textContent = data.grams + ' g';
@@ -168,6 +184,7 @@ async function renderDashboard(app) {
 
     await loadMeals();
 }
+
 
 // ═══════════════════════════════════════
 // Jídla
