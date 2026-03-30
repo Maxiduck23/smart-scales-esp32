@@ -1,5 +1,20 @@
 /* ═══════════════════════════════════════
-   ZÁKLADNÍ NASTAVENÍ (RESET & BASE)
+   PROMĚNNÉ (COLORS & SETTINGS)
+   ═══════════════════════════════════════ */
+:root {
+    --primary: #1a6b3a;
+    --primary-dark: #145230;
+    --bg-color: #f4f7f4;
+    --card-bg: #ffffff;
+    --text-main: #333333;
+    --text-muted: #666666;
+    --error: #c0392b;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+}
+
+/* ═══════════════════════════════════════
+   ZÁKLADNÍ RESET
    ═══════════════════════════════════════ */
 * {
     margin: 0;
@@ -8,142 +23,78 @@
 }
 
 body {
-    /* Moderní systémové písmo */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #f4f7f4;
-    color: #333;
-    line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
 }
 
 #app {
     min-height: 100vh;
     display: flex;
-    align-items: flex-start;
-    /* ← bylo center */
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     padding: 20px;
 }
 
 /* ═══════════════════════════════════════
-   KARTA (LOGIN / REGISTRACE)
+   KOMPONENTY: KARTY (CARDS)
    ═══════════════════════════════════════ */
-.card {
-    background: white;
-    border-radius: 20px;
-    padding: 40px;
+.card,
+.nutrition-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px;
     width: 100%;
-    max-width: 400px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    max-width: 500px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
-.card h1 {
-    color: #1a6b3a;
-    margin-bottom: 8px;
-    font-size: 28px;
-    text-align: center;
-}
-
-.card p {
-    color: #666;
-    margin-bottom: 24px;
-    text-align: center;
+.card h1,
+.nutrition-card h3 {
+    color: var(--primary);
+    margin-bottom: 16px;
 }
 
 /* ═══════════════════════════════════════
-   FORMULÁŘOVÉ PRVKY
+   FORMULÁŘE A TLAČÍTKA
    ═══════════════════════════════════════ */
 input {
     width: 100%;
     padding: 12px 16px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     border: 2px solid #edf2ed;
     border-radius: 10px;
     font-size: 16px;
-    outline: none;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
 }
 
 input:focus {
-    border-color: #1a6b3a;
-    background: #fff;
+    outline: none;
+    border-color: var(--primary);
     box-shadow: 0 0 0 4px rgba(26, 107, 58, 0.1);
 }
 
 button {
-    width: 100%;
-    padding: 14px;
-    background: #1a6b3a;
+    background: var(--primary);
     color: white;
     border: none;
+    padding: 12px 20px;
     border-radius: 10px;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
 }
 
 button:hover {
-    background: #145230;
+    background: var(--primary-dark);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(26, 107, 58, 0.2);
 }
 
-button:active {
-    transform: translateY(0);
-}
-
-/* ═══════════════════════════════════════
-   DASHBOARD
-   ═══════════════════════════════════════ */
-.dashboard {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-}
-
-/* Zobrazení váhy (Hero sekce) */
-.weight-display {
-    background: linear-gradient(135deg, #1a6b3a 0%, #145230 100%);
-    color: white;
-    border-radius: 24px;
-    padding: 40px;
-    text-align: center;
-    margin-bottom: 24px;
-    box-shadow: 0 8px 20px rgba(26, 107, 58, 0.2);
-}
-
-.weight-display .grams {
-    font-size: 72px;
-    font-weight: 800;
-    letter-spacing: -2px;
-}
-
-.weight-display .label {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    opacity: 0.8;
-}
-
-/* ═══════════════════════════════════════
-   VYHLEDÁVÁNÍ A NUTRIČNÍ KARTY
-   ═══════════════════════════════════════ */
-.nutrition-card {
-    background: white;
-    border-radius: 20px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-}
-
-/* Flexbox pro řádek hledání */
+/* FIX: Поисковая группа (Инпут и кнопка в ряд) */
 .search-group {
     display: flex;
     gap: 10px;
@@ -159,116 +110,108 @@ button:active {
     width: auto;
 }
 
-/* Položka jídla v seznamu */
-.meal-item {
-    background: #fcfdfc;
-    border-radius: 12px;
-    padding: 16px;
-    border: 1px solid #edf2ed;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 8px;
-    transition: transform 0.2s;
-}
-
-.meal-item:hover {
-    border-color: #1a6b3a;
-}
-
-.meal-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Menší vstupy pro gramy v seznamu */
-.meal-item input[type="number"] {
-    width: 80px;
-    margin-bottom: 0;
-    padding: 8px;
+/* ═══════════════════════════════════════
+   DASHBOARD: VÁHA (WEIGHT DISPLAY)
+   ═══════════════════════════════════════ */
+.weight-display {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: var(--radius);
+    padding: 40px 20px;
     text-align: center;
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 20px rgba(26, 107, 58, 0.2);
+}
+
+.weight-display .grams {
+    font-size: 64px;
+    font-weight: 800;
+}
+
+.weight-display .label {
+    font-size: 14px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    letter-spacing: 1px;
 }
 
 /* ═══════════════════════════════════════
-   PROGRESS BARY
+   PROGRESS BARY (VÝŽIVA)
    ═══════════════════════════════════════ */
 .bar-row {
-    display: flex;
-    align-items: center;
     margin-bottom: 16px;
-    gap: 12px;
 }
 
-.bar-label {
-    width: 90px;
-    font-size: 14px;
+.bar-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 4px;
     font-weight: 600;
-    color: #555;
 }
 
 .bar-track {
-    flex: 1;
-    background: #f0f0f0;
-    border-radius: 10px;
+    background: #eeeeee;
     height: 10px;
+    border-radius: 5px;
     overflow: hidden;
 }
 
 .bar-fill {
     height: 100%;
-    border-radius: 10px;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.bar-value {
-    width: 85px;
-    font-size: 12px;
-    font-weight: bold;
-    color: #333;
-    text-align: right;
+    background: var(--primary);
+    width: 0%;
+    transition: width 0.5s ease-out;
 }
 
 /* ═══════════════════════════════════════
-   OSTATNÍ (CHYBY, ODKAZY, ODHLÁŠENÍ)
+   SEZNAM JÍDEL (MEAL LIST)
    ═══════════════════════════════════════ */
-.logout-btn {
-    background: transparent;
-    color: #e74c3c;
-    border: 2px solid #fceae8;
-    width: auto;
-    padding: 8px 16px;
-    font-size: 14px;
-}
-
-.logout-btn:hover {
-    background: #e74c3c;
-    color: white;
-    border-color: #e74c3c;
-}
-
-.error {
-    background: #fdf2f2;
-    color: #c0392b;
+.meal-item {
+    background: #fcfdfc;
+    border: 1px solid #edf2ed;
     padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meal-item .info strong {
+    display: block;
+    font-size: 15px;
+}
+
+.meal-item .info small {
+    color: var(--text-muted);
+}
+
+.delete-btn {
+    background: #fceae8;
+    color: var(--error);
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.delete-btn:hover {
+    background: var(--error);
+    color: white;
+}
+
+/* ═══════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════ */
+.loading {
+    padding: 40px;
+    color: var(--text-muted);
+}
+
+.error-box {
+    color: var(--error);
     font-size: 14px;
-    border-left: 4px solid #c0392b;
+    margin-bottom: 10px;
     display: none;
-}
-
-.link {
-    text-align: center;
-    margin-top: 20px;
-}
-
-.link a {
-    color: #1a6b3a;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.link a:hover {
-    text-decoration: underline;
 }
