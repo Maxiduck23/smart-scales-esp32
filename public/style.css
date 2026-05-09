@@ -1352,3 +1352,31 @@ body.dark .favorite-item,
 body.dark .status-log-item {
     border-bottom-color: var(--border);
 }
+
+.app-logo {
+    width: 42px;
+    height: 42px;
+    display: block;
+}
+
+.topbar-logo .app-logo {
+    width: 30px;
+    height: 30px;
+}
+
+/* ═══════════════════════════════
+   LOGO ABOVE LOGIN
+   ═══════════════════════════════ */
+.auth-card .app-logo {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    filter: var(--logo-filter);
+}
+
+.auth-logo-img {
+    width: 86px;
+    height: 86px;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 8px 18px rgba(46, 125, 50, 0.25));
+}
