@@ -120,7 +120,7 @@ function renderStatusLogs() {
   var html = '';
 
   logs.slice(0, 8).forEach(function (log) {
-    var icon = log.type === 'error' ? '❌' : log.type === 'success' ? '✅' : log.type === 'weight' ? '<img src="/logo.svg" class="status-logo-img" alt="Chytrá váha">' : 'ℹ️';
+    var icon = log.type === 'error' ? '❌' : log.type === 'success' ? '✅' : log.type === 'water' ? '💧' : log.type === 'weight' ? '<img src="/logo.svg" class="status-logo-img" alt="Chytrá váha">' : 'ℹ️';
 
     html += '<div class="status-log-item">'
       + '<span class="status-log-icon">' + icon + '</span>'
@@ -190,6 +190,8 @@ var favoritesCache = {};
 var mealsCache = {};
 var productsCache = {};
 var darkMode = localStorage.getItem('cv_dark') === '1';
+var waterReminderIntervalId = null;
+var waterReminderToastOpen = false;
 
 function clearWeightInterval() {
   if (weightIntervalId) { clearInterval(weightIntervalId); weightIntervalId = null; }
@@ -301,17 +303,14 @@ async function doLogin() {
   if (!email || !pass) { err.textContent = 'Vyplňte email a heslo'; err.style.display = 'block'; return; }
   showToast('Přihlašuji...');
   addStatusLog('info', 'Přihlašuji...');
-  console.log(data);
   var data = await api('auth/login', { method: 'POST', body: JSON.stringify({ email: email, password: pass }) });
   if (data && data.token) {
-    console.log(data);
     saveToken(data.token);
     saveUser({ name: data.name, email: email });
     router();
     showToast('Přihlášení úspěšné');
     addStatusLog('success', 'Přihlášení úspěšné');
   } else {
-    console.log(data);
     err.textContent = (data && data.error) ? data.error : 'Chyba přihlášení';
     err.style.display = 'block';
     showToast('Chybné údaje');
@@ -426,13 +425,11 @@ async function doRegister() {
     regData = {};
     router();
     showToast('Registrace úspěšná');
-    console.log(data);
     addStatusLog('success', 'Registrace úspěšná');
   } else {
     err.textContent = (data && data.error) ? data.error : 'Chyba registrace';
     err.style.display = 'block';
     showToast('Chyba registrace');
-    console.log(data);
     addStatusLog('error', 'Chyba registrace');
   }
 }
@@ -497,18 +494,29 @@ async function renderDashboard() {
     + '</div>'
     + '</div>'
     // Water
-    + '<div class="section-card">'
-    + '<div class="section-title">💧 Voda</div>'
-    + '<div class="water-grid">'
-    + '<div class="water-cell" onclick="addWater(250)">250 ml</div>'
-    + '<div class="water-cell" onclick="addWater(500)">500 ml</div>'
-    + '<div class="water-cell" onclick="addWater(750)">750 ml</div>'
-    + '<div class="water-cell" onclick="addWater(1000)">1000 ml</div>'
-    + '<div class="water-cell" onclick="setWater(0)">Reset</div>'
+    + '<div class="section-card water-card">'
+    + '<div class="section-title"><span>💧 Voda</span><span class="water-reminder-chip" id="water-reminder-chip">Připomínka vypnuta</span></div>'
+    + '<div class="water-summary">'
+    + '<div><div class="water-label" id="water-label">0 ml / 2500 ml</div><div class="water-hint" id="water-hint">Dnes zatím žádná voda</div></div>'
+    + '<div class="water-drop">💧</div>'
     + '</div>'
-    + '<div class="water-progress" style="margin-top:12px">'
-    + '<div class="water-label" id="water-label">0 ml / 2500 ml</div>'
+    + '<div class="water-progress">'
     + '<div class="water-bar" id="water-bar"><div class="water-fill" id="water-fill"></div></div>'
+    + '</div>'
+    + '<div class="water-grid">'
+    + '<button class="water-cell" onclick="addWater(250)">+250 ml</button>'
+    + '<button class="water-cell" onclick="addWater(500)">+500 ml</button>'
+    + '<button class="water-cell" onclick="addWater(750)">+750 ml</button>'
+    + '<button class="water-cell" onclick="addWater(1000)">+1000 ml</button>'
+    + '<button class="water-cell muted" onclick="setWater(0)">Reset</button>'
+    + '</div>'
+    + '<div class="water-settings">'
+    + '<label class="water-toggle"><input type="checkbox" id="water-reminder-enabled"/> Připomínat pít vodu</label>'
+    + '<div class="water-setting-row">'
+    + '<label>Denní cíl <input type="number" id="water-goal-input" min="500" max="6000" step="100" value="2500"></label>'
+    + '<label>Interval <input type="number" id="water-interval-input" min="15" max="240" step="15" value="60"></label>'
+    + '</div>'
+    + '<button class="btn btn-primary btn-sm" onclick="saveWaterReminderSettings()">Uložit připomínku</button>'
     + '</div>'
     + '</div>'
     // Activity
@@ -631,17 +639,9 @@ async function renderDashboard() {
 
   startWeightPolling();
   await loadMealsAndProfile();
+  initWaterTracking();
   renderStatusLogs();
   addStatusLog('info', 'Dashboard načten');
-  console.log(data);
-  if (
-    lastLoggedWeight !== data.grams &&
-    Date.now() - lastWeightLogAt > 5000
-  ) {
-    lastLoggedWeight = data.grams;
-    lastWeightLogAt = Date.now();
-    addStatusLog('weight', 'Přijata váha: ' + data.grams + ' g');
-  }
 }
 
 function macroBox(cls, val, unit, lbl, id) {
@@ -660,6 +660,209 @@ function barRowHtml(name, id, color) {
 
 // Alias used by stats page too
 function barRow(name, id, color) { return barRowHtml(name, id, color); }
+
+// ── Water tracking / reminders ─────────────────────────
+var WATER_STATE_KEY = 'cv_water_state';
+var WATER_SETTINGS_KEY = 'cv_water_settings';
+
+function getTodayKey() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function getWaterSettings() {
+  var defaults = { goalMl: 2500, intervalMinutes: 60, enabled: false, lastReminderAt: 0 };
+  try {
+    return Object.assign(defaults, JSON.parse(localStorage.getItem(WATER_SETTINGS_KEY) || '{}'));
+  } catch (e) {
+    return defaults;
+  }
+}
+
+function saveWaterSettings(settings) {
+  localStorage.setItem(WATER_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function getWaterState() {
+  var today = getTodayKey();
+  try {
+    var state = JSON.parse(localStorage.getItem(WATER_STATE_KEY) || 'null');
+    if (!state || state.date !== today) return { date: today, amountMl: 0, lastDrinkAt: null };
+    return Object.assign({ date: today, amountMl: 0, lastDrinkAt: null }, state);
+  } catch (e) {
+    return { date: today, amountMl: 0, lastDrinkAt: null };
+  }
+}
+
+function saveWaterState(state) {
+  localStorage.setItem(WATER_STATE_KEY, JSON.stringify(state));
+}
+
+function initWaterTracking() {
+  var settings = getWaterSettings();
+  var enabled = document.getElementById('water-reminder-enabled');
+  var goal = document.getElementById('water-goal-input');
+  var interval = document.getElementById('water-interval-input');
+
+  if (enabled) enabled.checked = !!settings.enabled;
+  if (goal) goal.value = settings.goalMl;
+  if (interval) interval.value = settings.intervalMinutes;
+
+  updateWaterUi();
+  startWaterReminderLoop();
+}
+
+function updateWaterUi() {
+  var state = getWaterState();
+  var settings = getWaterSettings();
+  var pct = Math.min(100, Math.round((state.amountMl / settings.goalMl) * 100));
+  var label = document.getElementById('water-label');
+  var hint = document.getElementById('water-hint');
+  var fill = document.getElementById('water-fill');
+  var chip = document.getElementById('water-reminder-chip');
+
+  if (label) label.textContent = state.amountMl + ' ml / ' + settings.goalMl + ' ml';
+  if (fill) fill.style.width = pct + '%';
+  if (hint) {
+    if (state.amountMl >= settings.goalMl) {
+      hint.textContent = 'Skvělé! Denní cíl je splněn.';
+    } else if (state.lastDrinkAt) {
+      hint.textContent = 'Poslední sklenice: ' + formatLogTime(state.lastDrinkAt) + ' · splněno ' + pct + '%';
+    } else {
+      hint.textContent = 'Dnes zatím žádná voda · splněno ' + pct + '%';
+    }
+  }
+  if (chip) {
+    chip.textContent = settings.enabled ? 'Každých ' + settings.intervalMinutes + ' min' : 'Připomínka vypnuta';
+    chip.classList.toggle('active', !!settings.enabled);
+  }
+}
+
+function addWater(amountMl) {
+  var state = getWaterState();
+  var settings = getWaterSettings();
+  state.amountMl = Math.max(0, state.amountMl + amountMl);
+  state.lastDrinkAt = new Date().toISOString();
+  settings.lastReminderAt = Date.now();
+  saveWaterState(state);
+  saveWaterSettings(settings);
+  updateWaterUi();
+  addStatusLog('water', 'Vypito ' + amountMl + ' ml vody');
+
+  if (state.amountMl >= settings.goalMl) {
+    showToast('🏆 Denní cíl vody splněn!');
+  } else {
+    showToast('💧 Přidáno ' + amountMl + ' ml vody');
+  }
+}
+
+function setWater(amountMl) {
+  var state = getWaterState();
+  state.amountMl = Math.max(0, amountMl);
+  state.lastDrinkAt = amountMl > 0 ? new Date().toISOString() : null;
+  saveWaterState(state);
+  updateWaterUi();
+  addStatusLog('water', amountMl > 0 ? 'Voda nastavena na ' + amountMl + ' ml' : 'Voda resetována');
+  showToast(amountMl > 0 ? '💧 Voda upravena' : '💧 Voda resetována');
+}
+
+function saveWaterReminderSettings() {
+  var goal = parseInt(document.getElementById('water-goal-input') ? document.getElementById('water-goal-input').value : '2500', 10);
+  var interval = parseInt(document.getElementById('water-interval-input') ? document.getElementById('water-interval-input').value : '60', 10);
+  var enabled = !!(document.getElementById('water-reminder-enabled') && document.getElementById('water-reminder-enabled').checked);
+
+  if (!goal || goal < 500 || goal > 6000) {
+    showToast('⚠ Denní cíl musí být 500–6000 ml');
+    return;
+  }
+  if (!interval || interval < 15 || interval > 240) {
+    showToast('⚠ Interval musí být 15–240 minut');
+    return;
+  }
+
+  var settings = getWaterSettings();
+  settings.goalMl = goal;
+  settings.intervalMinutes = interval;
+  settings.enabled = enabled;
+  settings.lastReminderAt = Date.now();
+  saveWaterSettings(settings);
+
+  if (enabled && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(function () { });
+  }
+
+  updateWaterUi();
+  startWaterReminderLoop();
+  addStatusLog('water', enabled ? 'Připomínka vody zapnuta' : 'Připomínka vody vypnuta');
+  showToast(enabled ? '💧 Připomínka vody zapnuta' : 'Připomínka vody vypnuta');
+}
+
+function startWaterReminderLoop() {
+  if (waterReminderIntervalId) clearInterval(waterReminderIntervalId);
+  waterReminderIntervalId = setInterval(checkWaterReminder, 60 * 1000);
+  checkWaterReminder();
+}
+
+function checkWaterReminder() {
+  if (!getToken()) return;
+  var settings = getWaterSettings();
+  if (!settings.enabled) return;
+
+  var state = getWaterState();
+  if (state.amountMl >= settings.goalMl) return;
+
+  var dueMs = settings.intervalMinutes * 60 * 1000;
+  var lastEventAt = Math.max(settings.lastReminderAt || 0, state.lastDrinkAt ? new Date(state.lastDrinkAt).getTime() : 0);
+  if (Date.now() - lastEventAt < dueMs) return;
+
+  settings.lastReminderAt = Date.now();
+  saveWaterSettings(settings);
+  showWaterReminderPopup();
+}
+
+function showWaterReminderPopup() {
+  if (waterReminderToastOpen) return;
+  waterReminderToastOpen = true;
+  var state = getWaterState();
+  var settings = getWaterSettings();
+  var remaining = Math.max(settings.goalMl - state.amountMl, 0);
+  var container = document.getElementById('toast-container');
+
+  if (container) {
+    var toast = document.createElement('div');
+    toast.className = 'toast water-toast';
+    toast.innerHTML = '<span>💧 Čas na vodu! Zbývá ' + remaining + ' ml do cíle.</span>'
+      + '<div class="water-toast-actions">'
+      + '<button class="toast-undo" type="button">+250 ml</button>'
+      + '<button class="toast-later" type="button">Později</button>'
+      + '</div>';
+    container.appendChild(toast);
+
+    toast.querySelector('.toast-undo').onclick = function () {
+      addWater(250);
+      toast.remove();
+      waterReminderToastOpen = false;
+    };
+    toast.querySelector('.toast-later').onclick = function () {
+      toast.remove();
+      waterReminderToastOpen = false;
+    };
+    setTimeout(function () {
+      if (toast.parentNode) toast.remove();
+      waterReminderToastOpen = false;
+    }, 12000);
+  } else {
+    showToast('💧 Čas na vodu! Zbývá ' + remaining + ' ml do cíle.', null, 12000);
+    setTimeout(function () { waterReminderToastOpen = false; }, 12000);
+  }
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Čas na vodu 💧', {
+      body: 'Dopřej si sklenici vody. Do denního cíle zbývá ' + remaining + ' ml.',
+      icon: '/logo.svg'
+    });
+  }
+}
 
 // ── Weight polling ────────────────────────────────────
 function startWeightPolling() {
@@ -1856,3 +2059,4 @@ function scanForManual() {
   );
 }
 router();
+startWaterReminderLoop();
