@@ -550,17 +550,36 @@ select:focus {
    SEARCH
    ═══════════════════════════════ */
 .search-wrap {
-    display: flex;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
     margin-bottom: 12px;
+    align-items: stretch;
 }
 
 .search-wrap input {
-    flex: 1;
+    width: 100%;
+    min-width: 0;
+    display: block;
 }
 
-.search-wrap .btn {
+.search-wrap .btn,
+.search-wrap .btn-primary {
+    width: auto;
+    min-width: 120px;
     white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@media (max-width: 360px) {
+    .search-wrap {
+        grid-template-columns: 1fr;
+    }
+
+    .search-wrap .btn,
+    .search-wrap .btn-primary {
+        width: 100%;
+    }
 }
 
 .product-result {
@@ -1237,4 +1256,98 @@ body.dark .tdee-box {
 /* ── Анимация удаления ── */
 .meal-item {
     transition: opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+
+/* ═══════════════════════════════
+   FAVORITES
+   ═══════════════════════════════ */
+.favorite-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.favorite-item:last-child {
+    border-bottom: none;
+}
+
+.favorite-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.favorite-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.favorite-meta {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+.favorite-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.favorite-grams {
+    width: 64px;
+    padding: 7px 8px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+}
+
+/* ═══════════════════════════════
+   STATUS LOGS
+   ═══════════════════════════════ */
+.status-log-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.status-log-item:last-child {
+    border-bottom: none;
+}
+
+.status-log-icon {
+    width: 22px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.status-log-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.status-log-msg {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.status-log-time {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+    font-family: 'DM Mono', monospace;
+}
+
+body.dark .favorite-item,
+body.dark .status-log-item {
+    border-bottom-color: var(--border);
 }

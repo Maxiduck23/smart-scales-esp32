@@ -9,13 +9,144 @@ function saveUser(u) { localStorage.setItem('cv_user', JSON.stringify(u)); }
 function logout() {
   localStorage.removeItem('cv_token');
   localStorage.removeItem('cv_user');
+  cacheClearAll();
   clearWeightInterval();
   router();
+}
+// ── Local cache / cookie-like storage ─────────────────
+var CACHE_PREFIX = 'cv_cache_';
+var LOG_KEY = 'cv_status_logs';
+
+function cacheSet(key, value, ttlMs) {
+  var payload = {
+    value: value,
+    expiresAt: Date.now() + ttlMs
+  };
+
+  try {
+    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Cache write failed:', e);
+  }
+}
+
+function cacheGet(key) {
+  try {
+    var raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+
+    var payload = JSON.parse(raw);
+    if (!payload || Date.now() > payload.expiresAt) {
+      localStorage.removeItem(CACHE_PREFIX + key);
+      return null;
+    }
+
+    return payload.value;
+  } catch (e) {
+    console.warn('Cache read failed:', e);
+    return null;
+  }
+}
+
+function cacheRemove(key) {
+  localStorage.removeItem(CACHE_PREFIX + key);
+}
+
+function cacheClearAll() {
+  Object.keys(localStorage).forEach(function (k) {
+    if (k.startsWith(CACHE_PREFIX)) {
+      localStorage.removeItem(k);
+    }
+  });
+}
+
+// ── Status logs ───────────────────────────────────────
+function addStatusLog(type, message, extra) {
+  var logs = [];
+
+  try {
+    logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+  } catch (e) {
+    logs = [];
+  }
+
+  logs.unshift({
+    type: type || 'info',
+    message: message,
+    extra: extra || null,
+    time: new Date().toISOString()
+  });
+
+  logs = logs.slice(0, 50);
+  localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+
+  var box = document.getElementById('status-log-list');
+  if (box) renderStatusLogs();
+}
+
+function getStatusLogs() {
+  try {
+    return JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function clearStatusLogs() {
+  localStorage.removeItem(LOG_KEY);
+  renderStatusLogs();
+}
+
+function formatLogTime(iso) {
+  var d = new Date(iso);
+  return d.toLocaleTimeString('cs-CZ', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+function renderStatusLogs() {
+  var box = document.getElementById('status-log-list');
+  if (!box) return;
+
+  var logs = getStatusLogs();
+
+  if (!logs.length) {
+    box.innerHTML = '<div class="empty">Zatím žádné logy</div>';
+    return;
+  }
+
+  var html = '';
+
+  logs.slice(0, 8).forEach(function (log) {
+    var icon = log.type === 'error' ? '❌' : log.type === 'success' ? '✅' : log.type === 'weight' ? '⚖️' : 'ℹ️';
+
+    html += '<div class="status-log-item">'
+      + '<span class="status-log-icon">' + icon + '</span>'
+      + '<div class="status-log-main">'
+      + '<div class="status-log-msg">' + escapeHtml(log.message) + '</div>'
+      + '<div class="status-log-time">' + formatLogTime(log.time) + '</div>'
+      + '</div>'
+      + '</div>';
+  });
+
+  box.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 // ── API ───────────────────────────────────────────────
 async function api(path, options) {
   options = options || {};
+
   try {
     var res = await fetch('/api/' + path, Object.assign({}, options, {
       headers: Object.assign({
@@ -23,9 +154,28 @@ async function api(path, options) {
         'Authorization': 'Bearer ' + getToken()
       }, options.headers || {})
     }));
-    if (res.status === 401) { logout(); return null; }
-    return res.json();
-  } catch (e) { console.error('API error:', e); return null; }
+
+    if (res.status === 401) {
+      addStatusLog('error', 'Relace vypršela, přihlaste se znovu');
+      logout();
+      return null;
+    }
+
+    var data = await res.json().catch(function () {
+      return null;
+    });
+
+    if (!res.ok) {
+      addStatusLog('error', 'API chyba: ' + path, data && data.error ? data.error : null);
+      return data || null;
+    }
+
+    return data;
+  } catch (e) {
+    console.error('API error:', e);
+    addStatusLog('error', 'Chyba připojení k API: ' + path);
+    return null;
+  }
 }
 
 // ── State ─────────────────────────────────────────────
@@ -34,6 +184,7 @@ var weightIntervalId = null;
 var searchTimer = null;
 var cachedProfile = null;
 var cachedMacroGoals = { calories: 2000, protein: 150, carbs: 250, fat: 65 };
+var favoritesCache = {};
 var mealsCache = {};
 var productsCache = {};
 var darkMode = localStorage.getItem('cv_dark') === '1';
@@ -146,14 +297,24 @@ async function doLogin() {
   var err = document.getElementById('err');
   err.style.display = 'none';
   if (!email || !pass) { err.textContent = 'Vyplňte email a heslo'; err.style.display = 'block'; return; }
+  showToast('Přihlašuji...');
+  addStatusLog('info', 'Přihlašuji...');
+  console.log(data);
   var data = await api('auth/login', { method: 'POST', body: JSON.stringify({ email: email, password: pass }) });
   if (data && data.token) {
+    console.log(data);
     saveToken(data.token);
     saveUser({ name: data.name, email: email });
     router();
+    showToast('Přihlášení úspěšné');
+    addStatusLog('success', 'Přihlášení úspěšné');
   } else {
+    console.log(data);
     err.textContent = (data && data.error) ? data.error : 'Chyba přihlášení';
     err.style.display = 'block';
+    showToast('Chybné údaje');
+    addStatusLog('error', 'Chybné údaje');
+
   }
 }
 
@@ -262,9 +423,15 @@ async function doRegister() {
     saveUser({ name: data.name, email: payload.email });
     regData = {};
     router();
+    showToast('Registrace úspěšná');
+    console.log(data);
+    addStatusLog('success', 'Registrace úspěšná');
   } else {
     err.textContent = (data && data.error) ? data.error : 'Chyba registrace';
     err.style.display = 'block';
+    showToast('Chyba registrace');
+    console.log(data);
+    addStatusLog('error', 'Chyba registrace');
   }
 }
 
@@ -311,6 +478,159 @@ async function renderDashboard() {
     + '<div id="meals-list"><div class="spinner"></div></div>'
     + '</div>'
     + '</div>'
+    // Favorites
+    + '<div class="section-card">'
+    + '<div class="section-title">⭐ Oblíbená jídla</div>'
+    + '<div id="favorite-products"></div>'
+    + '</div>'
+    // Stats panel
+    + '<div class="section-card">'
+    + '<div class="section-title">📊 Souhrn</div>'
+    + '<div class="stats-grid">'
+    + '<div class="stat-row"><span>Týdenní průměr</span><span id="stats-week-avg">-- kcal</span></div>'
+    + '<div class="stat-row"><span>Nejvíc za den</span><span id="stats-max">-- kcal</span></div>'
+    + '<div class="stat-row"><span>Dní v tomto týdnu</span><span id="stats-days">0</span></div>'
+    + '</div>'
+    + '</div>'
+    // User profile card
+    + '<div class="section-card">'
+    + '<div class="section-title">👤 Můj profil</div>'
+    + '<div class="profile-grid">'
+    + '<div class="profile-row"><span class="label">Věk</span><span id="prof-age" class="value">--</span></div>'
+    + '<div class="profile-row"><span class="label">Výška</span><span id="prof-height" class="value">-- cm</span></div>'
+    + '<div class="profile-row"><span class="label">Pohlaví</span><span id="prof-gender" class="value">--</span></div>'
+    + '<div class="profile-row"><span class="label">Cíl</span><span id="prof-target" class="value">-- kcal</span></div>'
+    + '<div class="profile-row"><span class="label">BMI</span><span id="prof-bmi" class="value">--</span></div>'
+    + '<div class="profile-row"><span class="label">Tuk v těle</span><span id="prof-bfp" class="value">-- %</span></div>'
+    + '</div>'
+    + '<div style="text-align:center;margin-top:12px">'
+    + '<button class="btn btn-secondary" onclick="router(\'profile\')">Upravit profil</button>'
+    + '</div>'
+    + '</div>'
+    // Logbook
+    + '<div class="section-card">'
+    + '<div class="section-title">📜 Deník</div>'
+    + '<div id="logbook-content"><div class="spinner"></div></div>'
+    + '</div>'
+    // Water
+    + '<div class="section-card">'
+    + '<div class="section-title">💧 Voda</div>'
+    + '<div class="water-grid">'
+    + '<div class="water-cell" onclick="addWater(250)">250 ml</div>'
+    + '<div class="water-cell" onclick="addWater(500)">500 ml</div>'
+    + '<div class="water-cell" onclick="addWater(750)">750 ml</div>'
+    + '<div class="water-cell" onclick="addWater(1000)">1000 ml</div>'
+    + '<div class="water-cell" onclick="setWater(0)">Reset</div>'
+    + '</div>'
+    + '<div class="water-progress" style="margin-top:12px">'
+    + '<div class="water-label" id="water-label">0 ml / 2500 ml</div>'
+    + '<div class="water-bar" id="water-bar"><div class="water-fill" id="water-fill"></div></div>'
+    + '</div>'
+    + '</div>'
+    // Activity
+    + '<div class="section-card">'
+    + '<div class="section-title">🏃 Cvičení</div>'
+    + '<div id="activity-list"><div class="spinner"></div></div>'
+    + '<div class="activity-summary" style="margin-top:12px">'
+    + '<div class="activity-row"><span class="label">Celkem dnes</span><span id="activity-today" class="value">0 kcal</span></div>'
+    + '<div class="activity-row"><span class="label">Nejvíc za den</span><span id="activity-max" class="value">0 kcal</span></div>'
+    + '</div>'
+    + '</div>'
+    // Steps
+    + '<div class="section-card">'
+    + '<div class="section-title">👣 Kroky</div>'
+    + '<div class="steps-summary" style="text-align:center;margin-bottom:12px">'
+    + '<div style="font-size:32px;font-weight:700;color:var(--primary)" id="steps-count">--</div>'
+    + '<div style="color:var(--text-3)">kroků / <span id="steps-goal">--</span></div>'
+    + '</div>'
+    + '<div class="steps-bar-wrap" style="margin-bottom:12px">'
+    + '<div class="steps-bar" id="steps-bar"></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">'
+    + '<button class="btn btn-secondary btn-sm" onclick="setSteps(0)">Reset</button>'
+    + '<button class="btn btn-primary btn-sm" onclick="syncSteps()">Synchronizovat kroky</button>'
+    + '</div>'
+    + '</div>'
+    // Weight history
+    + '<div class="section-card">'
+    + '<div class="section-title">⚖️ Váha v čase</div>'
+    + '<div id="weight-chart" style="height:200px;margin-bottom:12px"></div>'
+    + '<div class="chart-legend">'
+    + '<div class="legend-item"><div class="legend-dot" style="background:#ff6f00"></div>Dnes</div>'
+    + '<div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>Tento týden</div>'
+    + '<div class="legend-item"><div class="legend-dot" style="background:#263238"></div>Cíl</div>'
+    + '</div>'
+    + '</div>'
+    // Recipes
+    + '<div class="section-card">'
+    + '<div class="section-title">👨‍🍳 Recepty</div>'
+    + '<div class="recipe-grid">'
+    + '<div class="recipe-card" onclick="openRecipeSearch()">'
+    + '<div class="recipe-icon">🔍</div>'
+    + '<div class="recipe-label">Hledat recepty</div>'
+    + '</div>'
+    + '<div class="recipe-card" onclick="openMyRecipes()">'
+    + '<div class="recipe-icon">📕</div>'
+    + '<div class="recipe-label">Mé recepty</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="section-card">'
+    + '<div class="section-title">🎯 Cíle a nastavení</div>'
+    + '<div class="settings-grid">'
+    + '<div class="setting-item">'
+    + '<div class="setting-label">Denní příjem kalorií</div>'
+    + '<div class="setting-value">'
+    + '<input type="number" class="setting-input" id="goal-kcal" min="1000" max="10000" step="100" value="2500"/>'
+    + '<span class="setting-unit">kcal</span>'
+    + '</div>'
+    + '<div class="setting-hint">Tvé celkové denní kalorie</div>'
+    + '</div>'
+    + '<div class="setting-item">'
+    + '<div class="setting-label">Denní příjem bílkovin</div>'
+    + '<div class="setting-value">'
+    + '<input type="number" class="setting-input" id="goal-protein" min="10" max="500" step="5" value="80"/>'
+    + '<span class="setting-unit">g</span>'
+    + '</div>'
+    + '<div class="setting-hint">Doporučený příjem bílkovin</div>'
+    + '</div>'
+    + '<div class="setting-item">'
+    + '<div class="setting-label">Denní příjem sacharidů</div>'
+    + '<div class="setting-value">'
+    + '<input type="number" class="setting-input" id="goal-carbs" min="10" max="1000" step="10" value="250"/>'
+    + '<span class="setting-unit">g</span>'
+    + '</div>'
+    + '<div class="setting-hint">Doporučený příjem sacharidů</div>'
+    + '</div>'
+    + '<div class="setting-item">'
+    + '<div class="setting-label">Denní příjem tuků</div>'
+    + '<div class="setting-value">'
+    + '<input type="number" class="setting-input" id="goal-fat" min="10" max="300" step="5" value="70"/>'
+    + '<span class="setting-unit">g</span>'
+    + '</div>'
+    + '<div class="setting-hint">Doporučený příjem tuků</div>'
+    + '</div>'
+    + '<div class="setting-item">'
+    + '<div class="setting-label">Cílová váha</div>'
+    + '<div class="setting-value">'
+    + '<input type="number" class="setting-input" id="target-weight" min="30" max="300" step="0.5" value="70"/>'
+    + '<span class="setting-unit">kg</span>'
+    + '</div>'
+    + '<div class="setting-hint">Tvoje cílová váha</div>'
+    + '</div>'
+    + '<div class="setting-item">'
+    + '<div class="setting-label">Denní cílový příjem kalorií</div>'
+    + '<div class="setting-value">'
+    + '<input type="number" class="setting-input" id="goal-daily-kcal" min="1000" max="10000" step="10" value="2000"/>'
+    + '<span class="setting-unit">kcal</span>'
+    + '</div>'
+    + '<div class="setting-hint">Celkový denní příjem kalorií</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="margin-top:16px;text-align:center">'
+    + '<button class="btn btn-primary" onclick="saveAllGoals()">Uložit změny</button>'
+    + '</div>'
+    + '</div>'
     + renderNav('dashboard');
 
   // Search input live
@@ -327,6 +647,22 @@ async function renderDashboard() {
 
   startWeightPolling();
   await loadMealsAndProfile();
+  renderStatusLogs();
+  addStatusLog('info', 'Dashboard načten');
+  console.log(data);
+  if (data && data.grams != null) {
+    document.getElementById('w-val').innerHTML = data.grams + '<span>g</span>';
+
+    var dot = document.getElementById('w-dot');
+    var st = document.getElementById('w-status');
+
+    if (dot) dot.classList.add('active');
+    if (st) st.textContent = '✓ Váha stabilizována';
+
+    addStatusLog('weight', 'Přijata váha: ' + data.grams + ' g');
+  }
+  var lastLoggedWeight = null;
+  var lastWeightLogAt = 0;
 }
 
 function macroBox(cls, val, unit, lbl, id) {
@@ -451,6 +787,137 @@ function setBar(barId, val, goal, label) {
   if (bar) bar.style.width = Math.min(val / goal * 100, 100) + '%';
   if (lbl) lbl.textContent = label;
 }
+// ═══════════════════════════════════════════════════════
+//  FAVORITES
+// ═══════════════════════════════════════════════════════
+async function loadFavorites(force) {
+  var cached = !force ? cacheGet('favorites') : null;
+
+  if (cached) {
+    applyFavoritesCache(cached);
+    return cached;
+  }
+
+  var data = await api('favorites');
+
+  if (!data || !data.favorites) {
+    return [];
+  }
+
+  cacheSet('favorites', data.favorites, 5 * 60 * 1000);
+  applyFavoritesCache(data.favorites);
+
+  return data.favorites;
+}
+
+function applyFavoritesCache(favorites) {
+  favoritesCache = {};
+
+  (favorites || []).forEach(function (f) {
+    favoritesCache[f.product_id] = f;
+  });
+}
+
+function isFavoriteProduct(productId) {
+  return !!favoritesCache[productId];
+}
+
+async function addFavorite(productId) {
+  var data = await api('favorites', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: parseInt(productId) })
+  });
+
+  if (data && data.ok) {
+    cacheRemove('favorites');
+    await loadFavorites(true);
+    addStatusLog('success', 'Produkt přidán do oblíbených');
+    showToast('⭐ Přidáno do oblíbených');
+    renderFavoriteProducts();
+  } else if (data && data.error === 'Already in favorites') {
+    showToast('Už je v oblíbených');
+  } else {
+    showToast('❌ Nepodařilo se přidat do oblíbených');
+  }
+}
+
+async function removeFavorite(productId) {
+  var data = await api('favorites', {
+    method: 'DELETE',
+    body: JSON.stringify({ product_id: parseInt(productId) })
+  });
+
+  if (data && data.ok) {
+    cacheRemove('favorites');
+    await loadFavorites(true);
+    addStatusLog('success', 'Produkt odebrán z oblíbených');
+    showToast('Odebráno z oblíbených');
+    renderFavoriteProducts();
+  } else {
+    showToast('❌ Nepodařilo se odebrat z oblíbených');
+  }
+}
+
+async function toggleFavorite(productId) {
+  if (isFavoriteProduct(productId)) {
+    await removeFavorite(productId);
+  } else {
+    await addFavorite(productId);
+  }
+
+  var q = document.getElementById('search-input');
+  if (q && q.value.trim()) {
+    await searchFood();
+  }
+}
+
+function renderFavoriteProducts() {
+  var box = document.getElementById('favorite-products');
+  if (!box) return;
+
+  var favs = Object.values(favoritesCache || {});
+
+  if (!favs.length) {
+    box.innerHTML = '<div class="empty"><div class="empty-icon">⭐</div>Zatím žádná oblíbená jídla</div>';
+    return;
+  }
+
+  var html = '';
+
+  favs.forEach(function (f) {
+    var p = f.products;
+    if (!p) return;
+
+    var kcal = p.calories != null ? p.calories : '?';
+
+    html += '<div class="favorite-item">'
+      + '<div class="favorite-info">'
+      + '<div class="favorite-name">' + escapeHtml(p.name) + '</div>'
+      + '<div class="favorite-meta">' + kcal + ' kcal/100g</div>'
+      + '</div>'
+      + '<div class="favorite-actions">'
+      + '<input type="number" class="favorite-grams" data-pid="' + p.id + '" value="100" min="1"/>'
+      + '<button class="btn btn-primary btn-sm" onclick="addFavoriteMeal(' + p.id + ')">Přidat</button>'
+      + '<button class="btn btn-icon" onclick="removeFavorite(' + p.id + ')" title="Odebrat">✕</button>'
+      + '</div>'
+      + '</div>';
+  });
+
+  box.innerHTML = html;
+}
+
+async function addFavoriteMeal(productId) {
+  var inp = document.querySelector('.favorite-grams[data-pid="' + productId + '"]');
+  var grams = parseInt(inp ? inp.value : 100) || 100;
+
+  var favorite = favoritesCache[productId];
+  if (favorite && favorite.products) {
+    productsCache[productId] = favorite.products;
+  }
+
+  await addMeal(productId, grams);
+}
+
 
 // ═══════════════════════════════════════════════════════
 //  SEARCH + ADD MEAL
@@ -466,42 +933,51 @@ async function searchFood() {
     results.innerHTML = '<div class="loading-text">Nic nenalezeno</div>';
     return;
   }
-
-  productsCache = {};
-  data.forEach(function (p) { productsCache[p.id] = p; });
-
-  var html = '';
-  data.forEach(function (p) {
-    var imgHtml = p.image_url
-      ? '<img class="product-img" src="' + p.image_url + '" alt="">'
-      : '<div class="product-img-placeholder">🥫</div>';
-    var macros = p.calories + ' kcal/100g'
-      + ' · B' + (p.protein_g != null ? p.protein_g : '?') + 'g'
-      + ' T' + (p.fat_g != null ? p.fat_g : '?') + 'g'
-      + ' S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
-    html += '<div class="product-result">'
-      + imgHtml
-      + '<div class="product-info">'
-      + '<div class="product-name">' + p.name + '</div>'
-      + '<div class="product-kcal">' + macros + '</div>'
-      + '</div>'
-      + '<div class="product-add">'
-      + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
-      + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
-      + '</div></div>';
-  });
-  results.innerHTML = html;
-
-  results.querySelectorAll('.add-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var pid = btn.getAttribute('data-pid');
-      var inp = results.querySelector('.grams-input[data-pid="' + pid + '"]');
-      var grams = parseInt(inp ? inp.value : 100) || 100;
-      addMeal(pid, grams);
-    });
-  });
 }
 
+productsCache = {};
+data.forEach(function (p) { productsCache[p.id] = p; });
+
+var html = '';
+data.forEach(function (p) {
+  var imgHtml = p.image_url
+    ? '<img class="product-img" src="' + p.image_url + '" alt="">'
+    : '<div class="product-img-placeholder">🥫</div>';
+  var macros = p.calories + ' kcal/100g'
+    + ' · B' + (p.protein_g != null ? p.protein_g : '?') + 'g'
+    + ' T' + (p.fat_g != null ? p.fat_g : '?') + 'g'
+    + ' S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
+  html += '<div class="product-result">'
+    + imgHtml
+    + '<div class="product-info">'
+    + '<div class="product-name">' + p.name + '</div>'
+    + '<div class="product-kcal">' + macros + '</div>'
+    + '</div>'
+    + '<div class="product-add">'
+    + '<button class="btn btn-icon fav-btn" data-pid="' + p.id + '" title="Oblíbené">'
+    + (isFavoriteProduct(p.id) ? '⭐' : '☆')
+    + '</button>'
+    + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
+    + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
+    + '</div></div>';
+});
+results.innerHTML = html;
+
+results.querySelectorAll('.add-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pid = btn.getAttribute('data-pid');
+    var inp = results.querySelector('.grams-input[data-pid="' + pid + '"]');
+    var grams = parseInt(inp ? inp.value : 100) || 100;
+    addMeal(pid, grams);
+  });
+});
+
+results.querySelectorAll('.fav-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pid = btn.getAttribute('data-pid');
+    toggleFavorite(pid);
+  });
+});
 async function addMeal(pid, grams) {
   var p = productsCache[pid];
   var name = p ? p.name : 'produkt';
