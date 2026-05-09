@@ -648,142 +648,142 @@ async function loadStats(days) {
       });
     });
   };
-
-  function showDayDetail(key) {
-    var dd = daysCache[key];
-    var detail = document.getElementById('day-detail');
-    if (!detail) return;
-    if (!dd || !dd.calories) {
-      detail.innerHTML = '<div class="empty"><div class="empty-icon">🍽️</div>Žádná data pro tento den</div>';
-      return;
-    }
-    var g = cachedMacroGoals;
-    var d = new Date(key);
-    var fmt = d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear();
-    detail.innerHTML = '<div class="section-title">' + fmt + '</div>'
-      + barRowHtml('Kalorie', 'dc-cal', '#f57c00')
-      + barRowHtml('Bílkoviny', 'dc-pro', '#1565c0')
-      + barRowHtml('Sacharidy', 'dc-carb', '#43a047')
-      + barRowHtml('Tuky', 'dc-fat', '#6a1b9a');
-    setBar('dc-cal', dd.calories || 0, g.calories, Math.round(dd.calories) + ' / ' + g.calories + ' kcal');
-    setBar('dc-pro', dd.protein || 0, g.protein, Math.round(dd.protein) + ' / ' + g.protein + ' g');
-    setBar('dc-carb', dd.carbs || 0, g.carbs, Math.round(dd.carbs) + ' / ' + g.carbs + ' g');
-    setBar('dc-fat', dd.fat || 0, g.fat, Math.round(dd.fat) + ' / ' + g.fat + ' g');
+}
+function showDayDetail(key) {
+  var dd = daysCache[key];
+  var detail = document.getElementById('day-detail');
+  if (!detail) return;
+  if (!dd || !dd.calories) {
+    detail.innerHTML = '<div class="empty"><div class="empty-icon">🍽️</div>Žádná data pro tento den</div>';
+    return;
   }
+  var g = cachedMacroGoals;
+  var d = new Date(key);
+  var fmt = d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear();
+  detail.innerHTML = '<div class="section-title">' + fmt + '</div>'
+    + barRowHtml('Kalorie', 'dc-cal', '#f57c00')
+    + barRowHtml('Bílkoviny', 'dc-pro', '#1565c0')
+    + barRowHtml('Sacharidy', 'dc-carb', '#43a047')
+    + barRowHtml('Tuky', 'dc-fat', '#6a1b9a');
+  setBar('dc-cal', dd.calories || 0, g.calories, Math.round(dd.calories) + ' / ' + g.calories + ' kcal');
+  setBar('dc-pro', dd.protein || 0, g.protein, Math.round(dd.protein) + ' / ' + g.protein + ' g');
+  setBar('dc-carb', dd.carbs || 0, g.carbs, Math.round(dd.carbs) + ' / ' + g.carbs + ' g');
+  setBar('dc-fat', dd.fat || 0, g.fat, Math.round(dd.fat) + ' / ' + g.fat + ' g');
+}
 
-  // ═══════════════════════════════════════════════════════
-  //  PROFILE PAGE
-  // ═══════════════════════════════════════════════════════
-  var profileGoal = 'fit';
+// ═══════════════════════════════════════════════════════
+//  PROFILE PAGE
+// ═══════════════════════════════════════════════════════
+var profileGoal = 'fit';
 
-  async function renderProfile() {
-    var app = document.getElementById('app');
-    app.innerHTML = renderTopbar('Profil')
-      + '<div class="page"><div class="section-card" id="profile-content"><div class="spinner"></div></div></div>'
-      + renderNav('profile');
+async function renderProfile() {
+  var app = document.getElementById('app');
+  app.innerHTML = renderTopbar('Profil')
+    + '<div class="page"><div class="section-card" id="profile-content"><div class="spinner"></div></div></div>'
+    + renderNav('profile');
 
-    var p = await api('profile');
-    cachedProfile = p;
-    var user = getUser();
-    var goals = p ? calcMacroGoals(p) : cachedMacroGoals;
-    profileGoal = (p && p.goal) ? p.goal : 'fit';
+  var p = await api('profile');
+  cachedProfile = p;
+  var user = getUser();
+  var goals = p ? calcMacroGoals(p) : cachedMacroGoals;
+  profileGoal = (p && p.goal) ? p.goal : 'fit';
 
-    var initials = user && user.name ? user.name[0].toUpperCase() : '?';
-    var goalLabels = { lose: 'Zhubnout', muscle: 'Nabrat svaly', fit: 'Být fit' };
-    var actLabels = { sedentary: 'Sedavý', light: 'Lehce aktivní', moderate: 'Středně aktivní', active: 'Velmi aktivní' };
-    var act = (p && p.activity) ? p.activity : 'light';
+  var initials = user && user.name ? user.name[0].toUpperCase() : '?';
+  var goalLabels = { lose: 'Zhubnout', muscle: 'Nabrat svaly', fit: 'Být fit' };
+  var actLabels = { sedentary: 'Sedavý', light: 'Lehce aktivní', moderate: 'Středně aktivní', active: 'Velmi aktivní' };
+  var act = (p && p.activity) ? p.activity : 'light';
 
-    var goalTabsHtml = '<div class="goal-tabs" id="p-goal-tabs">';
-    ['lose', 'muscle', 'fit'].forEach(function (g) {
-      goalTabsHtml += '<button data-val="' + g + '" class="' + (profileGoal === g ? 'active' : '') + '">' + goalLabels[g] + '</button>';
-    });
-    goalTabsHtml += '</div>';
+  var goalTabsHtml = '<div class="goal-tabs" id="p-goal-tabs">';
+  ['lose', 'muscle', 'fit'].forEach(function (g) {
+    goalTabsHtml += '<button data-val="' + g + '" class="' + (profileGoal === g ? 'active' : '') + '">' + goalLabels[g] + '</button>';
+  });
+  goalTabsHtml += '</div>';
 
-    var actOptions = ['sedentary', 'light', 'moderate', 'active'].map(function (v) {
-      return '<option value="' + v + '"' + (act === v ? ' selected' : '') + '>' + actLabels[v] + '</option>';
-    }).join('');
+  var actOptions = ['sedentary', 'light', 'moderate', 'active'].map(function (v) {
+    return '<option value="' + v + '"' + (act === v ? ' selected' : '') + '>' + actLabels[v] + '</option>';
+  }).join('');
 
-    document.getElementById('profile-content').innerHTML =
-      '<div class="profile-header">'
-      + '<div class="profile-avatar">' + initials + '</div>'
-      + '<div><div class="profile-name">' + (user ? user.name : '') + '</div>'
-      + '<div class="profile-email">' + (user ? user.email : '') + '</div></div>'
-      + '</div>'
-      // TDEE box
-      + '<div class="tdee-box">'
-      + '<div><div class="tdee-label">Doporučený denní příjem</div>'
-      + '<div class="tdee-value">' + goals.calories + ' kcal</div>'
-      + '<div class="tdee-sub">' + goalLabels[profileGoal] + ' · ' + actLabels[act] + '</div></div>'
-      + '<div style="font-size:40px">🎯</div>'
-      + '</div>'
-      // Macro grid
-      + '<div class="macro-grid" style="margin-bottom:20px">'
-      + macroBox('protein', goals.protein, 'g', 'Bílkoviny', 'pm-protein')
-      + macroBox('carbs', goals.carbs, 'g', 'Sacharidy', 'pm-carbs')
-      + macroBox('fat', goals.fat, 'g', 'Tuky', 'pm-fat')
-      + macroBox('kcal', goals.calories, 'kcal', 'Energie', 'pm-kcal')
-      + '</div>'
-      + '<div class="divider"></div>'
-      + '<div class="section-title" style="margin-bottom:16px">Upravit profil</div>'
-      + '<div class="field"><label>Cíl</label>' + goalTabsHtml + '</div>'
-      // Sliders
-      + '<div class="profile-slider-wrap">'
-      + '<div class="profile-slider-head"><span>Hmotnost</span><span id="lbl-weight">' + ((p && p.weight_kg) ? p.weight_kg : 70) + ' kg</span></div>'
-      + '<input type="range" id="sl-weight" min="40" max="200" value="' + ((p && p.weight_kg) ? p.weight_kg : 70) + '"/>'
-      + '</div>'
-      + '<div class="profile-slider-wrap">'
-      + '<div class="profile-slider-head"><span>Výška</span><span id="lbl-height">' + ((p && p.height_cm) ? p.height_cm : 170) + ' cm</span></div>'
-      + '<input type="range" id="sl-height" min="140" max="220" value="' + ((p && p.height_cm) ? p.height_cm : 170) + '"/>'
-      + '</div>'
-      + '<div class="profile-slider-wrap">'
-      + '<div class="profile-slider-head"><span>Cílová hmotnost</span><span id="lbl-gw">' + ((p && p.goal_weight_kg) ? p.goal_weight_kg : 65) + ' kg</span></div>'
-      + '<input type="range" id="sl-gw" min="40" max="200" value="' + ((p && p.goal_weight_kg) ? p.goal_weight_kg : 65) + '"/>'
-      + '</div>'
-      + '<div class="field" style="margin-top:8px"><label>Aktivita</label><select id="p-activity">' + actOptions + '</select></div>'
-      + '<button class="btn btn-primary" style="margin-top:8px" onclick="saveProfile()">Uložit změny</button>';
+  document.getElementById('profile-content').innerHTML =
+    '<div class="profile-header">'
+    + '<div class="profile-avatar">' + initials + '</div>'
+    + '<div><div class="profile-name">' + (user ? user.name : '') + '</div>'
+    + '<div class="profile-email">' + (user ? user.email : '') + '</div></div>'
+    + '</div>'
+    // TDEE box
+    + '<div class="tdee-box">'
+    + '<div><div class="tdee-label">Doporučený denní příjem</div>'
+    + '<div class="tdee-value">' + goals.calories + ' kcal</div>'
+    + '<div class="tdee-sub">' + goalLabels[profileGoal] + ' · ' + actLabels[act] + '</div></div>'
+    + '<div style="font-size:40px">🎯</div>'
+    + '</div>'
+    // Macro grid
+    + '<div class="macro-grid" style="margin-bottom:20px">'
+    + macroBox('protein', goals.protein, 'g', 'Bílkoviny', 'pm-protein')
+    + macroBox('carbs', goals.carbs, 'g', 'Sacharidy', 'pm-carbs')
+    + macroBox('fat', goals.fat, 'g', 'Tuky', 'pm-fat')
+    + macroBox('kcal', goals.calories, 'kcal', 'Energie', 'pm-kcal')
+    + '</div>'
+    + '<div class="divider"></div>'
+    + '<div class="section-title" style="margin-bottom:16px">Upravit profil</div>'
+    + '<div class="field"><label>Cíl</label>' + goalTabsHtml + '</div>'
+    // Sliders
+    + '<div class="profile-slider-wrap">'
+    + '<div class="profile-slider-head"><span>Hmotnost</span><span id="lbl-weight">' + ((p && p.weight_kg) ? p.weight_kg : 70) + ' kg</span></div>'
+    + '<input type="range" id="sl-weight" min="40" max="200" value="' + ((p && p.weight_kg) ? p.weight_kg : 70) + '"/>'
+    + '</div>'
+    + '<div class="profile-slider-wrap">'
+    + '<div class="profile-slider-head"><span>Výška</span><span id="lbl-height">' + ((p && p.height_cm) ? p.height_cm : 170) + ' cm</span></div>'
+    + '<input type="range" id="sl-height" min="140" max="220" value="' + ((p && p.height_cm) ? p.height_cm : 170) + '"/>'
+    + '</div>'
+    + '<div class="profile-slider-wrap">'
+    + '<div class="profile-slider-head"><span>Cílová hmotnost</span><span id="lbl-gw">' + ((p && p.goal_weight_kg) ? p.goal_weight_kg : 65) + ' kg</span></div>'
+    + '<input type="range" id="sl-gw" min="40" max="200" value="' + ((p && p.goal_weight_kg) ? p.goal_weight_kg : 65) + '"/>'
+    + '</div>'
+    + '<div class="field" style="margin-top:8px"><label>Aktivita</label><select id="p-activity">' + actOptions + '</select></div>'
+    + '<button class="btn btn-primary" style="margin-top:8px" onclick="saveProfile()">Uložit změny</button>';
 
-    // Sliders live update
-    document.getElementById('sl-weight').addEventListener('input', function () {
-      document.getElementById('lbl-weight').textContent = this.value + ' kg';
-    });
-    document.getElementById('sl-height').addEventListener('input', function () {
-      document.getElementById('lbl-height').textContent = this.value + ' cm';
-    });
-    document.getElementById('sl-gw').addEventListener('input', function () {
-      document.getElementById('lbl-gw').textContent = this.value + ' kg';
-    });
+  // Sliders live update
+  document.getElementById('sl-weight').addEventListener('input', function () {
+    document.getElementById('lbl-weight').textContent = this.value + ' kg';
+  });
+  document.getElementById('sl-height').addEventListener('input', function () {
+    document.getElementById('lbl-height').textContent = this.value + ' cm';
+  });
+  document.getElementById('sl-gw').addEventListener('input', function () {
+    document.getElementById('lbl-gw').textContent = this.value + ' kg';
+  });
 
-    // Goal tabs
-    document.querySelectorAll('#p-goal-tabs button').forEach(function (btn) {
-      btn.onclick = function () {
-        profileGoal = btn.getAttribute('data-val');
-        document.querySelectorAll('#p-goal-tabs button').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-      };
-    });
-  }
-
-  async function saveProfile() {
-    var payload = {
-      weight_kg: parseFloat(document.getElementById('sl-weight').value),
-      height_cm: parseInt(document.getElementById('sl-height').value),
-      goal_weight_kg: parseFloat(document.getElementById('sl-gw').value),
-      activity: document.getElementById('p-activity').value,
-      goal: profileGoal
+  // Goal tabs
+  document.querySelectorAll('#p-goal-tabs button').forEach(function (btn) {
+    btn.onclick = function () {
+      profileGoal = btn.getAttribute('data-val');
+      document.querySelectorAll('#p-goal-tabs button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
     };
-    var data = await api('profile', { method: 'PATCH', body: JSON.stringify(payload) });
-    if (data) {
-      cachedProfile = data;
-      cachedMacroGoals = calcMacroGoals(data);
-      showToast('✓ Profil uložen');
-      renderProfile();
-    } else {
-      showToast('❌ Chyba ukládání');
-    }
-  }
+  });
+}
 
-  // ═══════════════════════════════════════════════════════
-  //  START
-  // ═══════════════════════════════════════════════════════
-  applyTheme();
-  router();
+async function saveProfile() {
+  var payload = {
+    weight_kg: parseFloat(document.getElementById('sl-weight').value),
+    height_cm: parseInt(document.getElementById('sl-height').value),
+    goal_weight_kg: parseFloat(document.getElementById('sl-gw').value),
+    activity: document.getElementById('p-activity').value,
+    goal: profileGoal
+  };
+  var data = await api('profile', { method: 'PATCH', body: JSON.stringify(payload) });
+  if (data) {
+    cachedProfile = data;
+    cachedMacroGoals = calcMacroGoals(data);
+    showToast('✓ Profil uložen');
+    renderProfile();
+  } else {
+    showToast('❌ Chyba ukládání');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════
+applyTheme();
+router();
