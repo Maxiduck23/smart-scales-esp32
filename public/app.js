@@ -179,6 +179,8 @@ async function api(path, options) {
 }
 
 // ── State ─────────────────────────────────────────────
+var lastLoggedWeight = null;
+var lastWeightLogAt = 0;
 var currentPage = 'dashboard';
 var weightIntervalId = null;
 var searchTimer = null;
@@ -469,6 +471,7 @@ async function renderDashboard() {
     + '<div class="search-wrap">'
     + '<input type="text" id="search-input" placeholder="Hledat potravinu..."/>'
     + '<button class="btn btn-primary btn-sm" onclick="searchFood()">Hledat</button>'
+    + '<button class="scan-btn" onclick="openScanner()" title="Skenovat čárový kód">📷</button>'
     + '</div>'
     + '<div id="search-results"></div>'
     + '</div>'
@@ -650,19 +653,14 @@ async function renderDashboard() {
   renderStatusLogs();
   addStatusLog('info', 'Dashboard načten');
   console.log(data);
-  if (data && data.grams != null) {
-    document.getElementById('w-val').innerHTML = data.grams + '<span>g</span>';
-
-    var dot = document.getElementById('w-dot');
-    var st = document.getElementById('w-status');
-
-    if (dot) dot.classList.add('active');
-    if (st) st.textContent = '✓ Váha stabilizována';
-
+  if (
+    lastLoggedWeight !== data.grams &&
+    Date.now() - lastWeightLogAt > 5000
+  ) {
+    lastLoggedWeight = data.grams;
+    lastWeightLogAt = Date.now();
     addStatusLog('weight', 'Přijata váha: ' + data.grams + ' g');
   }
-  var lastLoggedWeight = null;
-  var lastWeightLogAt = 0;
 }
 
 function macroBox(cls, val, unit, lbl, id) {
@@ -928,11 +926,14 @@ async function searchFood() {
   var results = document.getElementById('search-results');
   if (!results) return;
   results.innerHTML = '<div class="loading-text">Hledám...</div>';
+  addStatusLog('info', 'Hledám jídlo');
   var data = await api('products?q=' + encodeURIComponent(q));
   if (!data || !data.length) {
     results.innerHTML = '<div class="loading-text">Nic nenalezeno</div>';
+    addStatusLog('error', 'Jídlo nenalezeno');
     return;
   }
+  addStatusLog('success', 'Nalezeno jídlo');
 }
 
 productsCache = {};
@@ -994,14 +995,13 @@ async function deleteMeal(id) {
   // Deep copy BEFORE anything clears the cache
   var saved = mealsCache[id] ? JSON.parse(JSON.stringify(mealsCache[id])) : null;
   var savedName = saved && saved.products ? saved.products.name : 'jídlo';
-
   // Visual feedback
   var el = document.getElementById('meal-' + id);
   if (el) el.style.opacity = '0.3';
 
   await api('meals', { method: 'DELETE', body: JSON.stringify({ meal_id: parseInt(id) }) });
   await loadMeals();
-
+  addStatusLog('info', 'Jídlo smazáno: ' + savedName);
   showToast('Smazáno: ' + savedName, async function () {
     if (saved && saved.product_id && saved.weight_g) {
       await api('meals', {
@@ -1370,4 +1370,187 @@ renderRegisterPage = function (step) {
   };
   app.appendChild(btn);
 };
+(function injectScannerStyles() {
+  var style = document.createElement('style');
+  style.textContent = `
+    /* ── Scanner modal overlay ── */
+    #scanner-modal {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.85);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      animation: fadeUp 0.2s ease;
+    }
+    #scanner-modal .scan-box {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      width: calc(100% - 32px);
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+    }
+    #scanner-modal .scan-title {
+      font-size: 16px; font-weight: 700; color: var(--green);
+      margin-bottom: 14px; text-align: center;
+    }
+    #scanner-modal .scan-hint {
+      font-size: 13px; color: var(--text-3);
+      text-align: center; margin-top: 12px; margin-bottom: 14px;
+    }
+    /* override html5-qrcode default ugly border */
+    #qr-reader { border: none !important; width: 100% !important; }
+    #qr-reader video { border-radius: 10px; width: 100% !important; }
+    #qr-reader__scan_region { border: 2px dashed var(--green) !important; border-radius: 8px; }
+    /* hide the html5-qrcode footer link */
+    #qr-reader__status_span, #qr-reader__header_message { display:none !important; }
+    /* scan button in search area */
+    .scan-btn {
+      padding: 10px 14px;
+      background: var(--green-light);
+      border: 1.5px solid var(--green);
+      border-radius: var(--radius-sm);
+      color: var(--green);
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .scan-btn:hover { background: var(--green); color: #fff; }
+    body.dark .scan-btn { background: var(--green-light); }
+    /* barcode result badge */
+    .barcode-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-light); color: var(--green);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 13px; font-weight: 600; margin-bottom: 10px;
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+// ── Scanner state ─────────────────────────────────────────────────────────────
+var _html5QrScanner = null;
+
+// ── Open camera scanner modal ─────────────────────────────────────────────────
+function openScanner() {
+  if (document.getElementById('scanner-modal')) return; // already open
+
+  var modal = document.createElement('div');
+  modal.id = 'scanner-modal';
+  modal.innerHTML =
+    '<div class="scan-box">'
+    + '<div class="scan-title">📷 Naskenuj čárový kód</div>'
+    + '<div id="qr-reader"></div>'
+    + '<div class="scan-hint">Namiř kameru na čárový kód produktu (EAN-13 / EAN-8 / UPC)</div>'
+    + '<button class="btn btn-ghost btn-sm" style="width:100%" onclick="closeScanner()">✕ Zrušit</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+
+  // tap outside box → close
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeScanner();
+  });
+
+  try {
+    _html5QrScanner = new Html5Qrcode('qr-reader');
+    _html5QrScanner.start(
+      { facingMode: 'environment' },
+      {
+        fps: 10,
+        qrbox: { width: 260, height: 120 },
+        // EAN-13, EAN-8, UPC-A, UPC-E, Code128 all enabled by default
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+        ]
+      },
+      function onSuccess(decodedText) {
+        closeScanner();
+        handleScannedBarcode(decodedText);
+      },
+      function onError() { /* ignore frame-level errors */ }
+    ).catch(function (err) {
+      console.error('Camera start error:', err);
+      closeScanner();
+      showToast('❌ Nelze spustit kameru — zkontrolujte oprávnění');
+    });
+  } catch (err) {
+    console.error('Html5Qrcode init error:', err);
+    closeScanner();
+    showToast('❌ Scanner není k dispozici');
+  }
+}
+
+// ── Close + clean up scanner ──────────────────────────────────────────────────
+function closeScanner() {
+  if (_html5QrScanner) {
+    _html5QrScanner.stop().catch(function () { }).finally(function () {
+      _html5QrScanner = null;
+    });
+  }
+  var modal = document.getElementById('scanner-modal');
+  if (modal) modal.remove();
+}
+
+// ── Handle a successfully scanned barcode ─────────────────────────────────────
+async function handleScannedBarcode(barcode) {
+  // Fill the search input so user can see what was scanned
+  var input = document.getElementById('search-input');
+  if (input) input.value = '';
+
+  var results = document.getElementById('search-results');
+  if (!results) return;
+
+  results.innerHTML =
+    '<div class="barcode-badge">🔖 ' + barcode + '</div>'
+    + '<div class="loading-text">Hledám produkt...</div>';
+
+  var data = await api('products?barcode=' + encodeURIComponent(barcode));
+
+  if (!data || !data.length) {
+    results.innerHTML =
+      '<div class="barcode-badge">🔖 ' + barcode + '</div>'
+      + '<div class="loading-text">Produkt nenalezen — zkuste textové vyhledávání</div>';
+    return;
+  }
+
+  // Reuse the same render logic as searchFood
+  productsCache = {};
+  data.forEach(function (p) { productsCache[p.id] = p; });
+
+  var html = '<div class="barcode-badge">🔖 ' + barcode + '</div>';
+  data.forEach(function (p) {
+    var imgHtml = p.image_url
+      ? '<img class="product-img" src="' + p.image_url + '" alt="">'
+      : '<div class="product-img-placeholder">🥫</div>';
+    var macros = p.calories + ' kcal/100g'
+      + ' · B' + (p.protein_g != null ? p.protein_g : '?') + 'g'
+      + ' T' + (p.fat_g != null ? p.fat_g : '?') + 'g'
+      + ' S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
+    html += '<div class="product-result">'
+      + imgHtml
+      + '<div class="product-info">'
+      + '<div class="product-name">' + p.name + '</div>'
+      + '<div class="product-kcal">' + macros + '</div>'
+      + '</div>'
+      + '<div class="product-add">'
+      + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
+      + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
+      + '</div></div>';
+  });
+  results.innerHTML = html;
+
+  results.querySelectorAll('.add-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = btn.getAttribute('data-pid');
+      var inp = results.querySelector('.grams-input[data-pid="' + pid + '"]');
+      var grams = parseInt(inp ? inp.value : 100) || 100;
+      addMeal(pid, grams);
+    });
+  });
+}
+
 router();
