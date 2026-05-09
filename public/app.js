@@ -921,64 +921,80 @@ async function addFavoriteMeal(productId) {
 //  SEARCH + ADD MEAL
 // ═══════════════════════════════════════════════════════
 async function searchFood() {
-  var q = (document.getElementById('search-input') ? document.getElementById('search-input').value : '').trim();
+  var q = (document.getElementById('search-input')
+    ? document.getElementById('search-input').value
+    : ''
+  ).trim();
+
   if (!q) return;
+
   var results = document.getElementById('search-results');
   if (!results) return;
+
   results.innerHTML = '<div class="loading-text">Hledám...</div>';
   addStatusLog('info', 'Hledám jídlo');
+
   var data = await api('products?q=' + encodeURIComponent(q));
+
   if (!data || !data.length) {
     results.innerHTML = '<div class="loading-text">Nic nenalezeno</div>';
     addStatusLog('error', 'Jídlo nenalezeno');
     return;
   }
+
   addStatusLog('success', 'Nalezeno jídlo');
+
+  productsCache = {};
+  data.forEach(function (p) {
+    productsCache[p.id] = p;
+  });
+
+  var html = '';
+
+  data.forEach(function (p) {
+    var imgHtml = p.image_url
+      ? '<img class="product-img" src="' + p.image_url + '" alt="">'
+      : '<div class="product-img-placeholder">🥫</div>';
+
+    var macros = p.calories + ' kcal/100g'
+      + ' · B' + (p.protein_g != null ? p.protein_g : '?') + 'g'
+      + ' T' + (p.fat_g != null ? p.fat_g : '?') + 'g'
+      + ' S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
+
+    html += '<div class="product-result">'
+      + imgHtml
+      + '<div class="product-info">'
+      + '<div class="product-name">' + escapeHtml(p.name) + '</div>'
+      + '<div class="product-kcal">' + macros + '</div>'
+      + '</div>'
+      + '<div class="product-add">'
+      + '<button class="btn btn-icon fav-btn" data-pid="' + p.id + '" title="Oblíbené">'
+      + (isFavoriteProduct(p.id) ? '⭐' : '☆')
+      + '</button>'
+      + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
+      + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
+      + '</div>'
+      + '</div>';
+  });
+
+  results.innerHTML = html;
+
+  results.querySelectorAll('.add-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = btn.getAttribute('data-pid');
+      var inp = results.querySelector('.grams-input[data-pid="' + pid + '"]');
+      var grams = parseInt(inp ? inp.value : 100) || 100;
+      addMeal(pid, grams);
+    });
+  });
+
+  results.querySelectorAll('.fav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = btn.getAttribute('data-pid');
+      toggleFavorite(pid);
+    });
+  });
 }
-
-productsCache = {};
-data.forEach(function (p) { productsCache[p.id] = p; });
-
-var html = '';
-data.forEach(function (p) {
-  var imgHtml = p.image_url
-    ? '<img class="product-img" src="' + p.image_url + '" alt="">'
-    : '<div class="product-img-placeholder">🥫</div>';
-  var macros = p.calories + ' kcal/100g'
-    + ' · B' + (p.protein_g != null ? p.protein_g : '?') + 'g'
-    + ' T' + (p.fat_g != null ? p.fat_g : '?') + 'g'
-    + ' S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
-  html += '<div class="product-result">'
-    + imgHtml
-    + '<div class="product-info">'
-    + '<div class="product-name">' + p.name + '</div>'
-    + '<div class="product-kcal">' + macros + '</div>'
-    + '</div>'
-    + '<div class="product-add">'
-    + '<button class="btn btn-icon fav-btn" data-pid="' + p.id + '" title="Oblíbené">'
-    + (isFavoriteProduct(p.id) ? '⭐' : '☆')
-    + '</button>'
-    + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
-    + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
-    + '</div></div>';
-});
-results.innerHTML = html;
-
-results.querySelectorAll('.add-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    var pid = btn.getAttribute('data-pid');
-    var inp = results.querySelector('.grams-input[data-pid="' + pid + '"]');
-    var grams = parseInt(inp ? inp.value : 100) || 100;
-    addMeal(pid, grams);
-  });
-});
-
-results.querySelectorAll('.fav-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    var pid = btn.getAttribute('data-pid');
-    toggleFavorite(pid);
-  });
-});
 async function addMeal(pid, grams) {
   var p = productsCache[pid];
   var name = p ? p.name : 'produkt';
