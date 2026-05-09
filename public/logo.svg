@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Chytrá váha</title>
+  <desc id="desc">Minimalist smart scale logo without side radio waves.</desc>
+  <defs>
+    <linearGradient id="bg" x1="74" y1="62" x2="430" y2="462" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#64EBA6"/>
+      <stop offset="0.48" stop-color="#2E7D32"/>
+      <stop offset="1" stop-color="#0D3B19"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="158" y1="286" x2="354" y2="374" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DCEFE1"/>
+    </linearGradient>
+    <filter id="shadow" x="60" y="78" width="392" height="360" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#05220C" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <path d="M142 292C142 266.6 162.6 246 188 246H324C349.4 246 370 266.6 370 292V344C370 369.4 349.4 390 324 390H188C162.6 390 142 369.4 142 344V292Z" fill="#F9FFF9"/>
+    <path d="M158 309C158 289.1 174.1 273 194 273H318C337.9 273 354 289.1 354 309V334C354 353.9 337.9 370 318 370H194C174.1 370 158 353.9 158 334V309Z" fill="url(#soft)" opacity="0.88"/>
+
+    <path d="M183 274C195.5 236 224.5 216 256 216C287.5 216 316.5 236 329 274" stroke="#F9FFF9" stroke-width="38" stroke-linecap="round"/>
+    <ellipse cx="256" cy="274" rx="102" ry="43" fill="#F9FFF9"/>
+    <ellipse cx="256" cy="274" rx="77" ry="25" stroke="#2E7D32" stroke-width="13" opacity="0.75"/>
+
+    <path d="M256 174V221" stroke="#F9FFF9" stroke-width="17" stroke-linecap="round"/>
+    <path d="M176 214C176 170 211.8 134 256 134C300.2 134 336 170 336 214" stroke="#F9FFF9" stroke-width="22" stroke-linecap="round"/>
+
+    <circle cx="189" cy="330" r="12" fill="#2E7D32"/>
+    <rect x="216" y="319" width="80" height="22" rx="11" fill="#2E7D32"/>
+    <circle cx="323" cy="330" r="12" fill="#2E7D32"/>
+  </g>
+</svg>
