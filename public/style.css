@@ -1148,3 +1148,93 @@ body.dark .goal-tabs button.active {
 body.dark .day-pill .day-circle-wrap circle:first-child {
     stroke: #2a3d2c;
 }
+
+/* ── Плавающая кнопка темы на логине/регистрации ── */
+.dark-float-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    z-index: 999;
+    transition: transform 0.2s;
+}
+
+.dark-float-btn:hover {
+    transform: scale(1.1);
+}
+
+/* ── Тёмная тема: auth страницы ── */
+body.dark .auth-wrap {
+    color: var(--text);
+}
+
+body.dark .auth-title {
+    color: #69f0ae;
+}
+
+body.dark .auth-sub {
+    color: var(--text-3);
+}
+
+body.dark .auth-link {
+    color: var(--text-3);
+}
+
+body.dark .auth-link a {
+    color: #69f0ae;
+}
+
+body.dark .step-dot {
+    background: var(--border);
+}
+
+body.dark .step-dot.active,
+body.dark .step-dot.done {
+    background: #43a047;
+}
+
+/* ── Тёмная: скролл дней ── */
+body.dark .days-scroll {
+    scrollbar-color: var(--border) transparent;
+}
+
+body.dark .day-label {
+    color: var(--text-3);
+}
+
+body.dark .day-date {
+    color: var(--text-2);
+}
+
+body.dark .day-kcal {
+    color: var(--text);
+}
+
+/* ── Тёмная: profile sliders ── */
+body.dark input[type=range] {
+    background: var(--border);
+}
+
+body.dark .profile-slider-head span:last-child {
+    background: var(--green-light);
+    color: #69f0ae;
+}
+
+body.dark .tdee-box {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Анимация удаления ── */
+.meal-item {
+    transition: opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}

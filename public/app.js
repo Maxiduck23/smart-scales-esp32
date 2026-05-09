@@ -546,7 +546,7 @@ async function deleteMeal(id) {
 //  STATS PAGE
 // ═══════════════════════════════════════════════════════
 var statsDays = 7;
-
+var _origRenderStats = renderStats;
 async function renderStats() {
   var app = document.getElementById('app');
   app.innerHTML = renderTopbar('Statistiky')
@@ -563,10 +563,13 @@ async function renderStats() {
     + '</div></div>'
     + renderNav('stats');
   await loadStats(statsDays);
+  setTimeout(function () {
+    enableDragScroll(document.getElementById('days-scroll'));
+  }, 100);
 }
 
 var daysCache = {};
-
+var _origLoadStatsP2 = loadStats;
 async function loadStats(days) {
   var _origLoadStats = loadStats;
   loadStats = async function (days) {
@@ -621,6 +624,11 @@ async function loadStats(days) {
         + '</div>';
     });
     container.innerHTML = html;
+
+    await _origLoadStatsP2(days);
+    setTimeout(function () {
+      enableDragScroll(document.getElementById('days-scroll'));
+    }, 100);
 
     // Вешаем клики через addEventListener — не через onclick атрибут
     container.querySelectorAll('.day-pill').forEach(function (pill) {
@@ -786,4 +794,104 @@ async function saveProfile() {
 //  START
 // ═══════════════════════════════════════════════════════
 applyTheme();
+function enableDragScroll(el) {
+  if (!el) return;
+  var isDown = false, startX, scrollLeft;
+  el.addEventListener('mousedown', function (e) {
+    isDown = true;
+    el.style.cursor = 'grabbing';
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+  });
+  el.addEventListener('mouseleave', function () { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mouseup', function () { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mousemove', function (e) {
+    if (!isDown) return;
+    e.preventDefault();
+    var x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+  el.style.cursor = 'grab';
+  // Скролл колёсиком горизонтально
+  el.addEventListener('wheel', function (e) {
+    if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+}
+var _origDeleteMealP2 = deleteMeal;
+deleteMeal = async function (id) {
+  var saved = mealsCache[id] ? JSON.parse(JSON.stringify(mealsCache[id])) : null;
+  var savedName = saved && saved.products ? saved.products.name : 'jídlo';
+
+  // Анимация исчезания
+  var el = document.getElementById('meal-' + id);
+  if (el) {
+    el.style.transition = 'all 0.3s ease';
+    el.style.opacity = '0';
+    el.style.maxHeight = el.offsetHeight + 'px';
+    setTimeout(function () {
+      el.style.maxHeight = '0';
+      el.style.padding = '0';
+      el.style.margin = '0';
+      el.style.overflow = 'hidden';
+    }, 150);
+  }
+
+  await new Promise(function (r) { setTimeout(r, 300); }); // ждём анимацию
+  await api('meals', { method: 'DELETE', body: JSON.stringify({ meal_id: id }) });
+  await loadMeals();
+
+  showToast('Smazáno: ' + savedName, async function () {
+    if (saved && saved.product_id && saved.weight_g) {
+      await api('meals', {
+        method: 'POST',
+        body: JSON.stringify({
+          product_id: saved.product_id,
+          weight_g: saved.weight_g,
+          meal_type: saved.meal_type || 'snack'
+        })
+      });
+      await loadMeals();
+      showToast('✓ Obnoveno');
+    }
+  });
+};
+
+// ── 3. ТЁМНАЯ ТЕМА НА ЛОГИН / РЕГИСТРАЦИИ ────────────
+// Патчим renderLogin
+var _origRenderLogin = renderLogin;
+renderLogin = function () {
+  _origRenderLogin();
+  // Добавляем кнопку тёмной темы на страницу логина
+  var app = document.getElementById('app');
+  var btn = document.createElement('button');
+  btn.className = 'dark-float-btn';
+  btn.textContent = darkMode ? '☀️' : '🌙';
+  btn.onclick = function () {
+    darkMode = !darkMode;
+    localStorage.setItem('cv_dark', darkMode ? '1' : '0');
+    applyTheme();
+    btn.textContent = darkMode ? '☀️' : '🌙';
+  };
+  app.appendChild(btn);
+};
+
+// Патчим renderRegisterPage тоже
+var _origRenderRegPage = renderRegisterPage;
+renderRegisterPage = function (step) {
+  _origRenderRegPage(step);
+  var app = document.getElementById('app');
+  var btn = document.createElement('button');
+  btn.className = 'dark-float-btn';
+  btn.textContent = darkMode ? '☀️' : '🌙';
+  btn.onclick = function () {
+    darkMode = !darkMode;
+    localStorage.setItem('cv_dark', darkMode ? '1' : '0');
+    applyTheme();
+    btn.textContent = darkMode ? '☀️' : '🌙';
+  };
+  app.appendChild(btn);
+};
 router();
