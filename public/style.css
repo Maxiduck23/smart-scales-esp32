@@ -303,6 +303,14 @@ select:focus {
     gap: 8px;
 }
 
+.topbar-logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    display: block;
+    border-radius: 8px;
+}
+
 .topbar-actions {
     display: flex;
     align-items: center;
@@ -455,6 +463,20 @@ select:focus {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.section-title-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-logo-img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    display: block;
+    border-radius: 6px;
 }
 
 /* ═══════════════════════════════
@@ -1337,6 +1359,14 @@ body.dark .tdee-box {
     width: 22px;
     flex-shrink: 0;
     text-align: center;
+}
+
+.status-logo-img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    display: block;
+    border-radius: 5px;
 }
 
 .status-log-main {
