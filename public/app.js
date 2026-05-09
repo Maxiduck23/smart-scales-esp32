@@ -469,9 +469,10 @@ async function renderDashboard() {
     + '<div class="section-card">'
     + '<div class="section-title">🔍 Přidat jídlo</div>'
     + '<div class="search-wrap">'
-    + '<input type="text" id="search-input" placeholder="Hledat potravinu..."/>'
-    + '<button class="btn btn-primary btn-sm" onclick="searchFood()">Hledat</button>'
+    + '<input type="text" id="search-input" placeholder="Hledat nebo zadat čárový kód..."/>'
+    + '<button class="btn btn-primary btn-sm" onclick="searchFood()">🔍</button>'
     + '<button class="scan-btn" onclick="openScanner()" title="Skenovat čárový kód">📷</button>'
+    + '<button class="manual-open-btn" onclick="openManualProduct()" title="Přidat vlastní produkt">➕</button>'
     + '</div>'
     + '<div id="search-results"></div>'
     + '</div>'
@@ -1548,5 +1549,310 @@ async function handleScannedBarcode(barcode) {
     });
   });
 }
+// ═══════════════════════════════════════════════════════
+//  MANUAL PRODUCT MODAL
+// ═══════════════════════════════════════════════════════
 
+var manualTab = 'manual';
+var _parsedNutrition = {};
+
+function openManualProduct() {
+  if (document.getElementById('manual-modal')) return;
+
+  var modal = document.createElement('div');
+  modal.id = 'manual-modal';
+  modal.innerHTML = buildManualModal();
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeManualModal();
+  });
+
+  modal.querySelectorAll('.mm-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      manualTab = btn.dataset.tab;
+
+      modal.querySelectorAll('.mm-tab').forEach(function (b) {
+        b.classList.remove('active');
+      });
+
+      modal.querySelectorAll('.mm-pane').forEach(function (p) {
+        p.classList.remove('active');
+      });
+
+      btn.classList.add('active');
+      modal.querySelector('.mm-pane[data-pane="' + manualTab + '"]').classList.add('active');
+    });
+  });
+}
+
+function closeManualModal() {
+  var modal = document.getElementById('manual-modal');
+  if (modal) modal.remove();
+}
+
+function buildManualModal() {
+  return '<div class="mm-box">'
+    + '<div class="mm-handle"></div>'
+    + '<div class="mm-title">➕ Přidat vlastní produkt</div>'
+
+    + '<div class="mm-tabs">'
+    + '<button class="mm-tab' + (manualTab === 'manual' ? ' active' : '') + '" data-tab="manual">✏️ Ručně</button>'
+    + '<button class="mm-tab' + (manualTab === 'paste' ? ' active' : '') + '" data-tab="paste">📋 Vložit text</button>'
+    + '</div>'
+
+    + '<div class="mm-pane' + (manualTab === 'manual' ? ' active' : '') + '" data-pane="manual">'
+    + '<div class="field"><label>Název produktu</label>'
+    + '<input type="text" id="mm-name" placeholder="např. Jogurt jahoda Tesco"></div>'
+
+    + '<div class="field" style="margin-bottom:6px"><label>Hodnoty na 100 g</label></div>'
+
+    + '<div class="mm-grid">'
+    + mmField('mm-cal', 'Kalorie kcal', '0')
+    + mmField('mm-prot', 'Bílkoviny g', '0')
+    + mmField('mm-fat', 'Tuky g', '0')
+    + mmField('mm-carb', 'Sacharidy g', '0')
+    + mmField('mm-fib', 'Vláknina g', '0')
+    + mmField('mm-salt', 'Sůl g', '0')
+    + '</div>'
+
+    + '<div class="field"><label>Gramáž porce (g)</label>'
+    + '<input type="number" id="mm-grams" value="100" min="1"></div>'
+
+    + '<button class="btn btn-primary" onclick="saveManualProduct()">✓ Přidat do deníku</button>'
+    + '</div>'
+
+    + '<div class="mm-pane' + (manualTab === 'paste' ? ' active' : '') + '" data-pane="paste">'
+    + '<div class="parse-hint">'
+    + 'Vyfoť etiketu přes <strong>Google Lens</strong> nebo <strong>Google Překladač</strong>, zkopíruj text a vlož sem:'
+    + '</div>'
+
+    + '<textarea class="paste-area" id="mm-paste-text" placeholder="Energie 1467 kJ / 350 kcal&#10;Bílkoviny 12,5 g&#10;Tuky 8,3 g&#10;Sacharidy 45,2 g&#10;Vláknina 2,1 g&#10;Sůl 0,8 g"></textarea>'
+
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:10px" onclick="parseAndPreview()">🔍 Rozpoznat hodnoty</button>'
+
+    + '<div id="mm-parse-preview" style="display:none"></div>'
+
+    + '<div class="field"><label>Název produktu</label>'
+    + '<div class="field"><label>Čárový kód (EAN) — nepovinné</label>'
+    + '<div style="display:flex;gap:6px">'
+    + '<input type="text" id="mm-barcode" inputmode="numeric" placeholder="8594000205137" '
+    + 'style="flex:1;font-family:\'DM Mono\',monospace"/>'
+    + '<button class="scan-btn" style="padding:10px 12px" onclick="scanForManual()" title="Skenovat">📷</button>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--text-3);margin-top:3px">Po uložení bude dohledatelný i skenem</div></div>'
+    + '<input type="text" id="mm-paste-name" placeholder="Zadej název ručně"></div>'
+
+    + '<div class="field"><label>Gramáž porce (g)</label>'
+    + '<input type="number" id="mm-paste-grams" value="100" min="1"></div>'
+
+    + '<button class="btn btn-primary" onclick="savePastedProduct()">✓ Přidat do deníku</button>'
+    + '</div>'
+
+    + '</div>';
+}
+
+function mmField(id, label, placeholder) {
+  return '<div class="field">'
+    + '<label>' + label + '</label>'
+    + '<input type="number" id="' + id + '" placeholder="' + placeholder + '" min="0" step="0.1">'
+    + '</div>';
+}
+
+function parseNutritionText(raw) {
+  var t = raw.replace(/,/g, '.').replace(/\u00a0/g, ' ');
+
+  function extract(patterns) {
+    for (var i = 0; i < patterns.length; i++) {
+      var m = t.match(patterns[i]);
+      if (m) {
+        var v = parseFloat(m[1]);
+        if (!isNaN(v)) return v;
+      }
+    }
+    return null;
+  }
+
+  var kcalLine = t.match(/(\d+(?:\.\d+)?)\s*kcal/i);
+  var calories = kcalLine ? parseFloat(kcalLine[1]) : null;
+
+  if (!calories) {
+    var kjLine = t.match(/(\d+(?:\.\d+)?)\s*kj/i);
+    if (kjLine) calories = Math.round(parseFloat(kjLine[1]) / 4.184);
+  }
+
+  var protein = extract([
+    /b[ií]lkovin[ay]?\s+(\d+(?:\.\d+)?)/i,
+    /protein[s]?\s*[:\/]?\s*(\d+(?:\.\d+)?)/i
+  ]);
+
+  var fat = extract([
+    /tuk[yů]?\s+(\d+(?:\.\d+)?)/i,
+    /fat\s*[:\/]?\s*(\d+(?:\.\d+)?)/i
+  ]);
+
+  var carbs = extract([
+    /sacharid[yů]?\s+(\d+(?:\.\d+)?)/i,
+    /carbohydrate[s]?\s*[:\/]?\s*(\d+(?:\.\d+)?)/i
+  ]);
+
+  var fiber = extract([
+    /vl[aá]knin[ay]?\s+(\d+(?:\.\d+)?)/i,
+    /fiber\s*[:\/]?\s*(\d+(?:\.\d+)?)/i,
+    /fibre\s*[:\/]?\s*(\d+(?:\.\d+)?)/i
+  ]);
+
+  var salt = extract([
+    /s[uů]l\s+(\d+(?:\.\d+)?)/i,
+    /salt\s*[:\/]?\s*(\d+(?:\.\d+)?)/i,
+    /sodium\s*[:\/]?\s*(\d+(?:\.\d+)?)/i
+  ]);
+
+  if (salt && t.match(/sodium/i) && !t.match(/s[uů]l/i)) {
+    salt = Math.round(salt * 2.5 * 10) / 10;
+  }
+
+  return { calories: calories, protein: protein, fat: fat, carbs: carbs, fiber: fiber, salt: salt };
+}
+
+function parseAndPreview() {
+  var raw = document.getElementById('mm-paste-text') ? document.getElementById('mm-paste-text').value : '';
+
+  if (!raw.trim()) {
+    showToast('⚠ Vložte text z etikety');
+    return;
+  }
+
+  _parsedNutrition = parseNutritionText(raw);
+
+  var prev = document.getElementById('mm-parse-preview');
+  if (!prev) return;
+
+  var rows = [
+    ['Kalorie', _parsedNutrition.calories, 'kcal'],
+    ['Bílkoviny', _parsedNutrition.protein, 'g'],
+    ['Tuky', _parsedNutrition.fat, 'g'],
+    ['Sacharidy', _parsedNutrition.carbs, 'g'],
+    ['Vláknina', _parsedNutrition.fiber, 'g'],
+    ['Sůl', _parsedNutrition.salt, 'g']
+  ];
+
+  var html = '<div class="parse-preview">'
+    + '<strong>Rozpoznané hodnoty na 100 g:</strong><br><br>';
+
+  rows.forEach(function (r) {
+    html += '<div class="parse-row"><span>' + r[0] + '</span><span>'
+      + (r[1] != null ? r[1] + ' ' + r[2] : '—')
+      + '</span></div>';
+  });
+
+  html += '</div>';
+
+  prev.style.display = 'block';
+  prev.innerHTML = html;
+}
+
+async function saveManualProduct() {
+  var name = document.getElementById('mm-name') ? document.getElementById('mm-name').value.trim() : '';
+  var cal = parseFloat(document.getElementById('mm-cal') ? document.getElementById('mm-cal').value : '') || null;
+  var prot = parseFloat(document.getElementById('mm-prot') ? document.getElementById('mm-prot').value : '') || null;
+  var fat = parseFloat(document.getElementById('mm-fat') ? document.getElementById('mm-fat').value : '') || null;
+  var carb = parseFloat(document.getElementById('mm-carb') ? document.getElementById('mm-carb').value : '') || null;
+  var fib = parseFloat(document.getElementById('mm-fib') ? document.getElementById('mm-fib').value : '') || null;
+  var salt = parseFloat(document.getElementById('mm-salt') ? document.getElementById('mm-salt').value : '') || null;
+  var grams = parseInt(document.getElementById('mm-grams') ? document.getElementById('mm-grams').value : '100') || 100;
+  var barcode = document.getElementById('mm-barcode')?.value.trim() || null;
+  if (!name) {
+    showToast('⚠ Zadejte název produktu');
+    return;
+  }
+
+  if (!cal) {
+    showToast('⚠ Zadejte kalorie');
+    return;
+  }
+
+  await addCustomProduct({ name: name, cal: cal, prot: prot, fat: fat, carb: carb, fib: fib, salt: salt, grams: grams, barcode: barcode });
+}
+
+async function savePastedProduct() {
+  var name = document.getElementById('mm-paste-name') ? document.getElementById('mm-paste-name').value.trim() : '';
+  var grams = parseInt(document.getElementById('mm-paste-grams') ? document.getElementById('mm-paste-grams').value : '100') || 100;
+
+  if (!name) {
+    showToast('⚠ Zadejte název produktu');
+    return;
+  }
+
+  if (!_parsedNutrition.calories) {
+    showToast('⚠ Nejprve klikněte Rozpoznat hodnoty');
+    return;
+  }
+
+  await addCustomProduct({
+    name: name,
+    cal: _parsedNutrition.calories,
+    prot: _parsedNutrition.protein,
+    fat: _parsedNutrition.fat,
+    carb: _parsedNutrition.carbs,
+    fib: _parsedNutrition.fiber,
+    salt: _parsedNutrition.salt,
+    grams: grams
+  });
+}
+
+async function addCustomProduct(o) {
+  var saved = await api('products/manual', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: o.name,
+      calories: o.cal,
+      protein_g: o.prot,
+      fat_g: o.fat,
+      carbs_g: o.carb,
+      fiber_g: o.fib,
+      salt_g: o.salt,
+      source: 'manual'
+    })
+  });
+
+  if (!saved || !saved.id) {
+    showToast('❌ Nepodařilo se uložit produkt');
+    return;
+  }
+
+  await api('meals', {
+    method: 'POST',
+    body: JSON.stringify({
+      product_id: saved.id,
+      weight_g: o.grams,
+      meal_type: 'snack'
+    })
+  });
+
+  closeManualModal();
+  showToast('✓ ' + o.name + ' přidáno');
+  await loadMeals();
+}
+function scanForManual() {
+  // Открываем сканер, но при успехе просто вставляем в поле
+  if (document.getElementById('scanner-modal')) return;
+  var modal = document.createElement('div');
+  modal.id = 'scanner-modal';
+  modal.innerHTML = '<div class="scan-box"><div class="scan-title">📷 Naskenuj čárový kód</div>'
+    + '<div id="qr-reader"></div>'
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" onclick="closeScanner()">✕ Zrušit</button></div>';
+  document.body.appendChild(modal);
+
+  _html5QrScanner = new Html5Qrcode('qr-reader');
+  _html5QrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 260, height: 120 } },
+    function (code) {
+      closeScanner();
+      // Вставляем в поле вместо поиска
+      var field = document.getElementById('mm-barcode') || document.getElementById('mm-paste-barcode');
+      if (field) { field.value = code; showToast('✓ Kód naskenován: ' + code); }
+    },
+    function () { }
+  );
+}
 router();
