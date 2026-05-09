@@ -1,8 +1,10 @@
 import supabase from './_supabase.js';
 import { requireDevice } from './_middleware.js';
+
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    if (!requireDevice(req)) return res.status(401).json({ error: 'Unauthorized' });
+    if (!requireDevice(req)) 
+      return res.status(401).json({ error: 'Unauthorized' });
     const { grams } = req.body;
     await supabase.from('weight_log').insert({ weight_g: grams });
     return res.json({ ok: true });
@@ -15,4 +17,4 @@ export default async function handler(req, res) {
       .limit(1);
     return res.json({ grams: data[0]?.weight_g || null });
   }
-}
+};

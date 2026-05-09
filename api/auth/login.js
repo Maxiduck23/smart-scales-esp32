@@ -15,7 +15,6 @@ export default async function handler(req, res) {
   const valid = await bcrypt.compare(password, users[0].password);
   if (!valid)
     return res.status(401).json({ error: 'Nesprávný email nebo heslo' });
-
   const token = jwt.sign(
     { userId: users[0].id, email: users[0].email },
     process.env.JWT_SECRET,

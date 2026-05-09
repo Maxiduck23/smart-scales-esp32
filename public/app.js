@@ -1848,11 +1848,11 @@ function scanForManual() {
   _html5QrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 260, height: 120 } },
     function (code) {
       closeScanner();
-      // Вставляем в поле вместо поиска
+      
       var field = document.getElementById('mm-barcode') || document.getElementById('mm-paste-barcode');
       if (field) { field.value = code; showToast('✓ Kód naskenován: ' + code); }
     },
     function () { }
   );
-}
+} 
 router();

@@ -7,7 +7,9 @@ export default async function handler(req, res) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { name, calories, protein_g, fat_g, carbs_g, fiber_g, salt_g, source } = req.body;
+    const { name, calories, protein_g, fat_g, carbs_g, fiber_g, salt_g, barcode, source } = req.body;
+
+    .insert({ name, calories, protein_g, fat_g, carbs_g, fiber_g, salt_g, barcode, source })
 
     if (!name || !calories) {
         return res.status(400).json({ error: 'Chybí název nebo kalorie' });

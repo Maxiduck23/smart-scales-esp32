@@ -1940,3 +1940,260 @@ body.dark .parse-preview {
     background: var(--green-faint);
     border-color: var(--green-light);
 }
+
+/* ═══════════════════════════════════════════
+   REDESIGN ADDITIONS — přidej na konec style.css
+   ═══════════════════════════════════════════ */
+
+/* ── Greeting hero ───────────────────────────────────────────────────────────── */
+.greeting-hero {
+    position: relative;
+    border-radius: var(--radius);
+    padding: 24px 22px 20px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    color: #fff;
+    min-height: 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* gradient se mění podle denní doby přes JS třídu na elementu */
+.greeting-hero.morning {
+    background: linear-gradient(135deg, #ff8f00 0%, #f57c00 40%, #e65100 100%);
+}
+
+.greeting-hero.noon {
+    background: linear-gradient(135deg, #1565c0 0%, #0288d1 50%, #26c6da 100%);
+}
+
+.greeting-hero.evening {
+    background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 40%, #ad1457 100%);
+}
+
+.greeting-hero.night {
+    background: linear-gradient(135deg, #0d1b2a 0%, #1a237e 60%, #283593 100%);
+}
+
+/* dekorativní kruhy */
+.greeting-hero::before,
+.greeting-hero::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.18;
+}
+
+.greeting-hero::before {
+    width: 180px;
+    height: 180px;
+    top: -60px;
+    right: -40px;
+    background: #fff;
+}
+
+.greeting-hero::after {
+    width: 100px;
+    height: 100px;
+    top: 20px;
+    right: 60px;
+    background: #fff;
+}
+
+.greeting-time {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 4px;
+    position: relative;
+}
+
+.greeting-text {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    position: relative;
+}
+
+.greeting-emoji {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 40px;
+    opacity: 0.85;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* ── Vylepšený weight hero ───────────────────────────────────────────────────── */
+.weight-hero {
+    background: linear-gradient(135deg, var(--green) 0%, #1b5e20 100%);
+    border-radius: var(--radius);
+    padding: 24px 22px 20px;
+    color: #fff;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.weight-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+}
+
+.weight-hero-left {
+    position: relative;
+    flex: 1;
+}
+
+.weight-hero-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 4px;
+}
+
+.weight-hero-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 52px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+
+.weight-hero-value span {
+    font-size: 20px;
+    font-weight: 400;
+    opacity: 0.8;
+    letter-spacing: 0;
+    margin-left: 4px;
+}
+
+.weight-hero-status {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* váha ikona vpravo */
+.weight-hero-icon {
+    position: relative;
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.weight-hero-icon img {
+    width: 52px;
+    height: 52px;
+    filter: brightness(0) invert(1);
+    opacity: 0.85;
+}
+
+/* ── Kompaktní search wrap — 3 tlačítka v řadě ───────────────────────────────── */
+.search-wrap {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: stretch;
+}
+
+.search-wrap input {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-wrap .btn-primary {
+    width: auto;
+    padding: 10px 16px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Voda — vlnová animace ───────────────────────────────────────────────────── */
+.water-fill-wrap {
+    position: relative;
+    height: 12px;
+    background: #d9ecff;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.water-fill-wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #64b5f6, #1565c0, #42a5f5);
+    background-size: 200% 100%;
+    animation: waterFlow 2s linear infinite;
+    transition: width 0.5s ease;
+}
+
+@keyframes waterFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 200% 50%;
+    }
+}
+
+/* ── Glassy section card ─────────────────────────────────────────────────────── */
+.section-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ── Aktivní status dot pulzuje zeleně ───────────────────────────────────────── */
+@keyframes dotPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(105, 240, 174, 0.6);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(105, 240, 174, 0);
+    }
+}
+
+.status-dot.active {
+    background: #69f0ae;
+    animation: dotPulse 1.8s ease infinite;
+}
+
+/* ── Dark mode water ─────────────────────────────────────────────────────────── */
+body.dark .water-fill-wrap {
+    background: #1a3a50;
+}
+
+/* ── Favicon cache bust hint (neviditelné, jen pro dokumentaci) ──────────────── */
+/* favicon: /logo.svg + /favicon.ico záloha v public/ */
