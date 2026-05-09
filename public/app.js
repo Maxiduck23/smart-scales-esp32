@@ -120,7 +120,7 @@ function renderStatusLogs() {
   var html = '';
 
   logs.slice(0, 8).forEach(function (log) {
-    var icon = log.type === 'error' ? '❌' : log.type === 'success' ? '✅' : log.type === 'weight' ? '⚖️' : 'ℹ️';
+    var icon = log.type === 'error' ? '❌' : log.type === 'success' ? '✅' : log.type === 'weight' ? '<img src="/logo.svg" class="status-logo-img" alt="Chytrá váha">' : 'ℹ️';
 
     html += '<div class="status-log-item">'
       + '<span class="status-log-icon">' + icon + '</span>'
@@ -253,7 +253,7 @@ function renderNav(active) {
 function renderTopbar(title) {
   title = title || 'Chytrá váha';
   return '<div class="topbar">'
-    + '<div class="topbar-logo">⚖️ ' + title + '</div>'
+    + '<div class="topbar-logo"><img src="/logo.svg" class="topbar-logo-img" alt="Chytrá váha">' + title + '</div>'
     + '<div class="topbar-actions">'
     + '<button class="btn btn-icon" onclick="toggleDark()" title="Tmavý režim">' + (darkMode ? '☀️' : '🌙') + '</button>'
     + '<button class="btn btn-ghost btn-sm" onclick="logout()">Odhlásit</button>'
@@ -275,7 +275,7 @@ function toggleDark() {
 function renderLogin() {
   document.getElementById('app').innerHTML =
     '<div class="auth-wrap">'
-    + '<div class="auth-logo">⚖️</div>'
+    + '<div class="auth-logo"><img src="/logo.svg" class="auth-logo-img" alt="Chytrá váha"></div>'
     + '<div class="auth-title">Chytrá váha</div>'
     + '<div class="auth-sub">Přihlaste se ke svému účtu</div>'
     + '<div class="auth-card">'
@@ -328,7 +328,7 @@ var regData = {};
 function renderRegisterPage(step) {
   step = step || 1;
   var html = '<div class="auth-wrap">'
-    + '<div class="auth-logo">⚖️</div>'
+    + '<div class="auth-logo"><img src="/logo.svg" class="auth-logo-img" alt="Chytrá váha"></div>'
     + '<div class="auth-title">Registrace</div>'
     + '<div class="auth-sub">Krok ' + step + ' ze 2</div>'
     + '<div class="step-indicator">'
@@ -536,7 +536,7 @@ async function renderDashboard() {
     + '</div>'
     // Weight history
     + '<div class="section-card">'
-    + '<div class="section-title">⚖️ Váha v čase</div>'
+    + '<div class="section-title"><span class="section-title-main"><img src="/logo.svg" class="section-logo-img" alt="Chytrá váha">Váha v čase</span></div>'
     + '<div id="weight-chart" style="height:200px;margin-bottom:12px"></div>'
     + '<div class="chart-legend">'
     + '<div class="legend-item"><div class="legend-dot" style="background:#ff6f00"></div>Dnes</div>'
