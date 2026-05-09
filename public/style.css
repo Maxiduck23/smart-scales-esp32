@@ -1070,3 +1070,81 @@ input[type=range]::-webkit-slider-thumb:hover {
         font-size: 44px;
     }
 }
+
+/* ═══════════════════════════════
+   DARK THEME
+   ═══════════════════════════════ */
+body.dark {
+    --bg: #0f1710;
+    --card: #1a2b1c;
+    --border: #2a3d2c;
+    --text: #e8f5e9;
+    --text-2: #a5c8a8;
+    --text-3: #5a8a5e;
+    --green-faint: #1a2b1c;
+    --green-light: #1e3320;
+    --bg-color: #0f1710;
+}
+
+body.dark .auth-card,
+body.dark .section-card,
+body.dark .product-result,
+body.dark .meal-item,
+body.dark .topbar,
+body.dark .bottom-nav {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+body.dark input[type=text],
+body.dark input[type=email],
+body.dark input[type=password],
+body.dark input[type=number],
+body.dark select {
+    background: #0f1710;
+    color: var(--text);
+    border-color: var(--border);
+}
+
+body.dark .macro-box.kcal {
+    background: #2a2010;
+    border-color: #4a3a10;
+}
+
+body.dark .macro-box.protein {
+    background: #0f1f30;
+    border-color: #1a3a50;
+}
+
+body.dark .macro-box.carbs {
+    background: #0f2010;
+    border-color: #1a3a1a;
+}
+
+body.dark .macro-box.fat {
+    background: #200f18;
+    border-color: #3a1a28;
+}
+
+body.dark .bar-track {
+    background: #2a3d2c;
+}
+
+body.dark .goal-tabs {
+    border-color: var(--border);
+}
+
+body.dark .goal-tabs button {
+    background: var(--card);
+    color: var(--text-2);
+    border-color: var(--border);
+}
+
+body.dark .goal-tabs button.active {
+    background: var(--green);
+    color: #fff;
+}
+
+body.dark .day-pill .day-circle-wrap circle:first-child {
+    stroke: #2a3d2c;
+}
