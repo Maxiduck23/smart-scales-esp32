@@ -1158,4 +1158,7 @@ renderRegisterPage = function (step) {
 
 router();
 startWaterReminderLoop();
-
+// Registrace Service Workera pro PWA instalaci
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(console.error);
+}
