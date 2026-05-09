@@ -5,10 +5,10 @@
 // ═══════════════════════════════════════════════════════
 
 // ── Auth helpers ──────────────────────────────────────
-const getToken  = () => localStorage.getItem('cv_token');
-const saveToken = t  => localStorage.setItem('cv_token', t);
-const getUser   = () => { try { return JSON.parse(localStorage.getItem('cv_user') || 'null'); } catch { return null; } };
-const saveUser  = u  => localStorage.setItem('cv_user', JSON.stringify(u));
+const getToken = () => localStorage.getItem('cv_token');
+const saveToken = t => localStorage.setItem('cv_token', t);
+const getUser = () => { try { return JSON.parse(localStorage.getItem('cv_user') || 'null'); } catch { return null; } };
+const saveUser = u => localStorage.setItem('cv_user', JSON.stringify(u));
 
 function logout() {
   localStorage.removeItem('cv_token');
@@ -37,12 +37,12 @@ async function api(path, options = {}) {
 }
 
 // ── State ─────────────────────────────────────────────
-let currentPage   = 'dashboard';
+let currentPage = 'dashboard';
 let weightIntervalId = null;
-let searchTimer   = null;
+let searchTimer = null;
 let cachedProfile = null;
 let cachedMacroGoals = { calories: 2000, protein: 150, carbs: 250, fat: 65 };
-let mealsCache    = {};  // id → meal object, для undo
+let mealsCache = {};  // id → meal object, для undo
 
 function clearWeightInterval() {
   if (weightIntervalId) { clearInterval(weightIntervalId); weightIntervalId = null; }
@@ -55,9 +55,9 @@ function router(page = 'dashboard') {
   currentPage = page;
   switch (page) {
     case 'dashboard': renderDashboard(); break;
-    case 'stats':     renderStats();     break;
-    case 'profile':   renderProfile();   break;
-    default:          renderDashboard();
+    case 'stats': renderStats(); break;
+    case 'profile': renderProfile(); break;
+    default: renderDashboard();
   }
 }
 
@@ -86,8 +86,8 @@ function showToast(msg, undoFn = null, duration = 4000) {
 function renderNav(active) {
   const items = [
     { id: 'dashboard', icon: '🏠', label: 'Přehled' },
-    { id: 'stats',     icon: '📅', label: 'Statistiky' },
-    { id: 'profile',   icon: '👤', label: 'Profil' },
+    { id: 'stats', icon: '📅', label: 'Statistiky' },
+    { id: 'profile', icon: '👤', label: 'Profil' },
   ];
   return `
     <nav class="bottom-nav">
@@ -136,9 +136,9 @@ function renderLogin() {
 }
 
 async function doLogin() {
-  const email    = document.getElementById('email').value.trim();
+  const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  const err      = document.getElementById('err');
+  const err = document.getElementById('err');
   err.style.display = 'none';
   if (!email || !password) { showErr('Vyplňte email a heslo'); return; }
   const data = await api('auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
@@ -226,10 +226,10 @@ function renderRegStep2() {
     <div class="field">
       <label>Aktivita</label>
       <select id="activity">
-        <option value="sedentary"  ${regData.activity==='sedentary' ?'selected':''}>Sedavý</option>
-        <option value="light"      ${regData.activity==='light'||!regData.activity?'selected':''}>Lehce aktivní</option>
-        <option value="moderate"   ${regData.activity==='moderate'?'selected':''}>Středně aktivní</option>
-        <option value="active"     ${regData.activity==='active'?'selected':''}>Velmi aktivní</option>
+        <option value="sedentary"  ${regData.activity === 'sedentary' ? 'selected' : ''}>Sedavý</option>
+        <option value="light"      ${regData.activity === 'light' || !regData.activity ? 'selected' : ''}>Lehce aktivní</option>
+        <option value="moderate"   ${regData.activity === 'moderate' ? 'selected' : ''}>Středně aktivní</option>
+        <option value="active"     ${regData.activity === 'active' ? 'selected' : ''}>Velmi aktivní</option>
       </select>
     </div>
     <div style="display:flex;gap:10px">
@@ -251,8 +251,8 @@ function initGoalTabs() {
 }
 
 function regStep1Next() {
-  const name     = document.getElementById('name').value.trim();
-  const email    = document.getElementById('email').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   const err = document.getElementById('err');
   if (!name || !email || !password) { err.textContent = 'Vyplňte všechna pole'; err.style.display = 'block'; return; }
@@ -262,12 +262,12 @@ function regStep1Next() {
 }
 
 async function doRegister() {
-  const birth_year    = parseInt(document.getElementById('birth_year').value) || null;
-  const height_cm     = parseInt(document.getElementById('height_cm').value) || null;
-  const weight_kg     = parseFloat(document.getElementById('weight_kg').value) || null;
+  const birth_year = parseInt(document.getElementById('birth_year').value) || null;
+  const height_cm = parseInt(document.getElementById('height_cm').value) || null;
+  const weight_kg = parseFloat(document.getElementById('weight_kg').value) || null;
   const goal_weight_kg = parseFloat(document.getElementById('goal_weight_kg').value) || null;
-  const activity      = document.getElementById('activity').value;
-  const goal          = regData.goal || 'lose';
+  const activity = document.getElementById('activity').value;
+  const goal = regData.goal || 'lose';
   const err = document.getElementById('err');
 
   const payload = { ...regData, birth_year, height_cm, weight_kg, goal_weight_kg, goal, activity };
@@ -303,18 +303,18 @@ async function renderDashboard() {
       </div>
 
       <div class="macro-grid" id="macro-grid">
-        ${macroBox('kcal','--','kcal','Energie')}
-        ${macroBox('protein','--','g','Bílkoviny')}
-        ${macroBox('carbs','--','g','Sacharidy')}
-        ${macroBox('fat','--','g','Tuky')}
+        ${macroBox('kcal', '--', 'kcal', 'Energie')}
+        ${macroBox('protein', '--', 'g', 'Bílkoviny')}
+        ${macroBox('carbs', '--', 'g', 'Sacharidy')}
+        ${macroBox('fat', '--', 'g', 'Tuky')}
       </div>
 
       <div class="section-card">
         <div class="section-title">Denní cíle</div>
-        ${barRow('Kalorie','bar-cal','#f57c00')}
-        ${barRow('Bílkoviny','bar-pro','#1565c0')}
-        ${barRow('Sacharidy','bar-carb','#43a047')}
-        ${barRow('Tuky','bar-fat','#6a1b9a')}
+        ${barRow('Kalorie', 'bar-cal', '#f57c00')}
+        ${barRow('Bílkoviny', 'bar-pro', '#1565c0')}
+        ${barRow('Sacharidy', 'bar-carb', '#43a047')}
+        ${barRow('Tuky', 'bar-fat', '#6a1b9a')}
       </div>
 
       <div class="section-card">
@@ -368,9 +368,9 @@ function startWeightPolling() {
     if (data?.grams != null) {
       document.getElementById('w-val').innerHTML = `${data.grams}<span>g</span>`;
       const dot = document.getElementById('w-dot');
-      const st  = document.getElementById('w-status');
+      const st = document.getElementById('w-status');
       if (dot) { dot.classList.add('active'); }
-      if (st)  { st.textContent = '✓ Váha stabilizována'; }
+      if (st) { st.textContent = '✓ Váha stabilizována'; }
     }
   }, 1000);
 }
@@ -393,12 +393,12 @@ function calcMacroGoals(p) {
   const bmr = 10 * p.weight_kg + 6.25 * p.height_cm - 5 * age;
   const factors = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
   const tdee = bmr * (factors[p.activity] || 1.375);
-  const adj  = { lose: -500, muscle: 300, fit: 0 };
-  const cal  = Math.round(tdee + (adj[p.goal] || 0));
+  const adj = { lose: -500, muscle: 300, fit: 0 };
+  const cal = Math.round(tdee + (adj[p.goal] || 0));
   const protMult = { lose: 1.6, muscle: 2.0, fit: 1.4 };
   const prot = Math.round(p.weight_kg * (protMult[p.goal] || 1.5));
-  const fat  = Math.round(cal * 0.27 / 9);
-  const carbs= Math.round((cal - prot * 4 - fat * 9) / 4);
+  const fat = Math.round(cal * 0.27 / 9);
+  const carbs = Math.round((cal - prot * 4 - fat * 9) / 4);
   return { calories: cal, protein: prot, fat, carbs };
 }
 
@@ -409,19 +409,19 @@ async function loadMeals() {
   const g = cachedMacroGoals;
 
   // Macro boxes
-  setEl('mb-kcal',    `${Math.round(t.calories||0)}<small>kcal</small>`);
-  setEl('mb-protein', `${Math.round(t.protein||0)}<small>g</small>`);
-  setEl('mb-carbs',   `${Math.round(t.carbs||0)}<small>g</small>`);
-  setEl('mb-fat',     `${Math.round(t.fat||0)}<small>g</small>`);
+  setEl('mb-kcal', `${Math.round(t.calories || 0)}<small>kcal</small>`);
+  setEl('mb-protein', `${Math.round(t.protein || 0)}<small>g</small>`);
+  setEl('mb-carbs', `${Math.round(t.carbs || 0)}<small>g</small>`);
+  setEl('mb-fat', `${Math.round(t.fat || 0)}<small>g</small>`);
 
   // Bars
-  setBar('bar-cal',  t.calories||0, g.calories, `${Math.round(t.calories||0)} / ${g.calories} kcal`, 'v-bar-cal');
-  setBar('bar-pro',  t.protein||0,  g.protein,  `${Math.round(t.protein||0)} / ${g.protein} g`,     'v-bar-pro');
-  setBar('bar-carb', t.carbs||0,    g.carbs,    `${Math.round(t.carbs||0)} / ${g.carbs} g`,         'v-bar-carb');
-  setBar('bar-fat',  t.fat||0,      g.fat,      `${Math.round(t.fat||0)} / ${g.fat} g`,             'v-bar-fat');
+  setBar('bar-cal', t.calories || 0, g.calories, `${Math.round(t.calories || 0)} / ${g.calories} kcal`, 'v-bar-cal');
+  setBar('bar-pro', t.protein || 0, g.protein, `${Math.round(t.protein || 0)} / ${g.protein} g`, 'v-bar-pro');
+  setBar('bar-carb', t.carbs || 0, g.carbs, `${Math.round(t.carbs || 0)} / ${g.carbs} g`, 'v-bar-carb');
+  setBar('bar-fat', t.fat || 0, g.fat, `${Math.round(t.fat || 0)} / ${g.fat} g`, 'v-bar-fat');
 
   const badge = document.getElementById('total-kcal-badge');
-  if (badge) badge.textContent = `${Math.round(t.calories||0)} kcal celkem`;
+  if (badge) badge.textContent = `${Math.round(t.calories || 0)} kcal celkem`;
 
   // Meals list
   const list = document.getElementById('meals-list');
@@ -470,49 +470,67 @@ function onSearchInput() {
   searchTimer = setTimeout(searchFood, 480);
 }
 
+// productsCache: id -> product object, used by addMeal
+let productsCache = {};
+
 async function searchFood() {
   const q = (document.getElementById('search-input')?.value || '').trim();
   if (!q) return;
   const results = document.getElementById('search-results');
   if (!results) return;
   results.innerHTML = '<div class="loading-text">Hledám...</div>';
-  const data = await api(`products?q=${encodeURIComponent(q)}`);
-  if (!data?.length) {
+  const data = await api('products?q=' + encodeURIComponent(q));
+  if (!data || !data.length) {
     results.innerHTML = '<div class="loading-text">Nic nenalezeno</div>';
     return;
   }
-  results.innerHTML = data.map(p => {
-    const key = (p.barcode || p.name || p.id).toString().replace(/[^a-z0-9]/gi, '_');
-    return `
-      <div class="product-result">
-        ${p.image_url
-          ? `<img class="product-img" src="${p.image_url}" alt="" onerror="this.style.display='none'">`
-          : `<div class="product-img-placeholder">🥫</div>`}
-        <div class="product-info">
-          <div class="product-name">${p.name}</div>
-          <div class="product-kcal">${p.calories} kcal / 100g · B${p.protein_g??'?'}g T${p.fat_g??'?'}g S${p.carbs_g??'?'}g</div>
-        </div>
-        <div class="product-add">
-          <input type="number" id="g-${key}" value="100" min="1" style="width:60px"/>
-          <button class="btn btn-primary btn-sm"
-            onclick="addMeal('${p.id}','${p.barcode||''}','${p.name.replace(/'/g,'\\'')}','${key}')">+</button>
-        </div>
-      </div>`;
-  }).join('');
+
+  // Store in cache, render with data-id only — no quotes/JS in onclick
+  productsCache = {};
+  data.forEach(function (p) { productsCache[p.id] = p; });
+
+  var html = '';
+  data.forEach(function (p) {
+    var imgHtml = p.image_url
+      ? '<img class="product-img" src="' + p.image_url + '" alt="" onerror="this.style.display=\'none\'">'
+      : '<div class="product-img-placeholder">🥫</div>';
+    var macros = p.calories + ' kcal / 100g'
+      + ' · B' + (p.protein_g != null ? p.protein_g : '?') + 'g'
+      + ' T' + (p.fat_g != null ? p.fat_g : '?') + 'g'
+      + ' S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
+    html += '<div class="product-result">'
+      + imgHtml
+      + '<div class="product-info">'
+      + '<div class="product-name">' + p.name + '</div>'
+      + '<div class="product-kcal">' + macros + '</div>'
+      + '</div>'
+      + '<div class="product-add">'
+      + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
+      + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
+      + '</div>'
+      + '</div>';
+  });
+  results.innerHTML = html;
+
+  // Attach click handlers after render
+  results.querySelectorAll('.add-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = btn.getAttribute('data-pid');
+      var inp = results.querySelector('.grams-input[data-pid="' + pid + '"]');
+      var grams = parseInt(inp ? inp.value : 100) || 100;
+      addMeal(pid, grams);
+    });
+  });
 }
 
-async function addMeal(productId, barcode, name, key) {
-  let id = productId;
-  if (!id || id === 'null' || id === 'undefined') {
-    const found = await api(`products?q=${encodeURIComponent(name)}`);
-    const product = found?.find(p => p.barcode === barcode || p.name === name);
-    id = product?.id;
-  }
-  if (!id) { showToast('❌ Produkt nenalezen'); return; }
-  const gramsEl = document.getElementById(`g-${key}`);
-  const grams = parseInt(gramsEl?.value || 100);
-  await api('meals', { method: 'POST', body: JSON.stringify({ product_id: id, weight_g: grams, meal_type: 'snack' }) });
-  showToast(`✓ ${name} přidáno`);
+async function addMeal(pid, grams) {
+  var p = productsCache[pid];
+  if (!p) { showToast('❌ Produkt nenalezen'); return; }
+  await api('meals', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: pid, weight_g: grams, meal_type: 'snack' })
+  });
+  showToast('✓ ' + p.name + ' přidáno');
   await loadMeals();
 }
 
@@ -547,8 +565,8 @@ async function renderStats() {
   app.innerHTML = renderTopbar('Statistiky') + `
     <div class="page">
       <div class="stats-toggle">
-        <button class="btn ${statsDays===7?'btn-primary':'btn-ghost'}" onclick="loadStats(7)">7 dní</button>
-        <button class="btn ${statsDays===30?'btn-primary':'btn-ghost'}" onclick="loadStats(30)">30 dní</button>
+        <button class="btn ${statsDays === 7 ? 'btn-primary' : 'btn-ghost'}" onclick="loadStats(7)">7 dní</button>
+        <button class="btn ${statsDays === 30 ? 'btn-primary' : 'btn-ghost'}" onclick="loadStats(30)">30 dní</button>
       </div>
       <div class="section-card">
         <div class="section-title">Kalorický přehled</div>
@@ -582,7 +600,7 @@ async function loadStats(days) {
   }
 
   const goal = cachedMacroGoals.calories;
-  const dayNames = ['Ne','Po','Út','St','Čt','Pá','So'];
+  const dayNames = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
 
   // Fill missing days
   const allDays = [];
@@ -598,8 +616,8 @@ async function loadStats(days) {
   container.innerHTML = allDays.map(({ key, d, data: dd }) => {
     if (dd) daysCache[key] = dd;
     const kcal = dd ? Math.round(dd.calories) : 0;
-    const pct  = Math.min(kcal / goal, 1);
-    const r    = 22;
+    const pct = Math.min(kcal / goal, 1);
+    const r = 22;
     const circ = 2 * Math.PI * r;
     const dash = pct * circ;
     const color = !dd ? '#ddd' : pct < 0.7 ? '#1565c0' : pct < 1.1 ? '#43a047' : '#d32f2f';
@@ -614,11 +632,11 @@ async function loadStats(days) {
               stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
           </svg>
           <div class="day-circle-inner">
-            <span class="day-kcal">${kcal||'—'}</span>
+            <span class="day-kcal">${kcal || '—'}</span>
             <span class="day-kcal-lbl">kcal</span>
           </div>
         </div>
-        <div class="day-date">${d.getDate()}.${d.getMonth()+1}</div>
+        <div class="day-date">${d.getDate()}.${d.getMonth() + 1}</div>
       </div>`;
   }).join('');
 
@@ -634,17 +652,17 @@ function showDayDetail(dateKey) {
   }
   const g = cachedMacroGoals;
   const d = new Date(dateKey);
-  const fmt = `${d.getDate()}. ${d.getMonth()+1}. ${d.getFullYear()}`;
+  const fmt = `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
   detail.innerHTML = `
     <div class="section-title">${fmt}</div>
-    ${barRow('Kalorie','dc-cal','#f57c00')}
-    ${barRow('Bílkoviny','dc-pro','#1565c0')}
-    ${barRow('Sacharidy','dc-carb','#43a047')}
-    ${barRow('Tuky','dc-fat','#6a1b9a')}`;
-  setBar('dc-cal',  dd.calories||0, g.calories, `${Math.round(dd.calories)} / ${g.calories} kcal`, 'v-dc-cal');
-  setBar('dc-pro',  dd.protein||0,  g.protein,  `${Math.round(dd.protein)} / ${g.protein} g`,      'v-dc-pro');
-  setBar('dc-carb', dd.carbs||0,    g.carbs,    `${Math.round(dd.carbs)} / ${g.carbs} g`,          'v-dc-carb');
-  setBar('dc-fat',  dd.fat||0,      g.fat,      `${Math.round(dd.fat)} / ${g.fat} g`,              'v-dc-fat');
+    ${barRow('Kalorie', 'dc-cal', '#f57c00')}
+    ${barRow('Bílkoviny', 'dc-pro', '#1565c0')}
+    ${barRow('Sacharidy', 'dc-carb', '#43a047')}
+    ${barRow('Tuky', 'dc-fat', '#6a1b9a')}`;
+  setBar('dc-cal', dd.calories || 0, g.calories, `${Math.round(dd.calories)} / ${g.calories} kcal`, 'v-dc-cal');
+  setBar('dc-pro', dd.protein || 0, g.protein, `${Math.round(dd.protein)} / ${g.protein} g`, 'v-dc-pro');
+  setBar('dc-carb', dd.carbs || 0, g.carbs, `${Math.round(dd.carbs)} / ${g.carbs} g`, 'v-dc-carb');
+  setBar('dc-fat', dd.fat || 0, g.fat, `${Math.round(dd.fat)} / ${g.fat} g`, 'v-dc-fat');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -666,7 +684,7 @@ async function renderProfile() {
   const goals = p ? calcMacroGoals(p) : cachedMacroGoals;
   const initials = (user?.name || '?')[0].toUpperCase();
   const goalLabels = { lose: 'Zhubnout', muscle: 'Nabrat svaly', fit: 'Být fit' };
-  const actLabels  = { sedentary: 'Sedavý', light: 'Lehce aktivní', moderate: 'Středně aktivní', active: 'Velmi aktivní' };
+  const actLabels = { sedentary: 'Sedavý', light: 'Lehce aktivní', moderate: 'Středně aktivní', active: 'Velmi aktivní' };
 
   document.getElementById('profile-content').innerHTML = `
     <div class="profile-header">
@@ -681,16 +699,16 @@ async function renderProfile() {
       <div>
         <div class="tdee-label">Doporučený denní příjem</div>
         <div class="tdee-value">${goals.calories} kcal</div>
-        <div class="tdee-sub">${goalLabels[p?.goal||'fit']} · ${actLabels[p?.activity||'light']}</div>
+        <div class="tdee-sub">${goalLabels[p?.goal || 'fit']} · ${actLabels[p?.activity || 'light']}</div>
       </div>
       <div style="font-size:40px">🎯</div>
     </div>
 
     <div class="macro-grid" style="margin-bottom:20px">
       ${macroBox('protein', goals.protein, 'g', 'Bílkoviny')}
-      ${macroBox('carbs',   goals.carbs,   'g', 'Sacharidy')}
-      ${macroBox('fat',     goals.fat,     'g', 'Tuky')}
-      ${macroBox('kcal',    goals.calories,'kcal','Energie')}
+      ${macroBox('carbs', goals.carbs, 'g', 'Sacharidy')}
+      ${macroBox('fat', goals.fat, 'g', 'Tuky')}
+      ${macroBox('kcal', goals.calories, 'kcal', 'Energie')}
     </div>
 
     <div class="divider"></div>
@@ -699,46 +717,46 @@ async function renderProfile() {
     <div class="field">
       <label>Cíl</label>
       <div class="goal-tabs" id="p-goal-tabs">
-        <button data-val="lose"   class="${(p?.goal||'fit')==='lose'?'active':''}">Zhubnout</button>
-        <button data-val="muscle" class="${(p?.goal||'fit')==='muscle'?'active':''}">Nabrat svaly</button>
-        <button data-val="fit"    class="${(p?.goal||'fit')==='fit'?'active':''}">Být fit</button>
+        <button data-val="lose"   class="${(p?.goal || 'fit') === 'lose' ? 'active' : ''}">Zhubnout</button>
+        <button data-val="muscle" class="${(p?.goal || 'fit') === 'muscle' ? 'active' : ''}">Nabrat svaly</button>
+        <button data-val="fit"    class="${(p?.goal || 'fit') === 'fit' ? 'active' : ''}">Být fit</button>
       </div>
     </div>
 
     <div class="profile-slider-wrap">
       <div class="profile-slider-head">
         <span>Hmotnost</span>
-        <span id="lbl-weight">${p?.weight_kg||70} kg</span>
+        <span id="lbl-weight">${p?.weight_kg || 70} kg</span>
       </div>
-      <input type="range" id="sl-weight" min="40" max="200" value="${p?.weight_kg||70}"
+      <input type="range" id="sl-weight" min="40" max="200" value="${p?.weight_kg || 70}"
         oninput="document.getElementById('lbl-weight').textContent=this.value+' kg'"/>
     </div>
 
     <div class="profile-slider-wrap">
       <div class="profile-slider-head">
         <span>Výška</span>
-        <span id="lbl-height">${p?.height_cm||170} cm</span>
+        <span id="lbl-height">${p?.height_cm || 170} cm</span>
       </div>
-      <input type="range" id="sl-height" min="140" max="220" value="${p?.height_cm||170}"
+      <input type="range" id="sl-height" min="140" max="220" value="${p?.height_cm || 170}"
         oninput="document.getElementById('lbl-height').textContent=this.value+' cm'"/>
     </div>
 
     <div class="profile-slider-wrap">
       <div class="profile-slider-head">
         <span>Cílová hmotnost</span>
-        <span id="lbl-goal-w">${p?.goal_weight_kg||65} kg</span>
+        <span id="lbl-goal-w">${p?.goal_weight_kg || 65} kg</span>
       </div>
-      <input type="range" id="sl-goal-w" min="40" max="200" value="${p?.goal_weight_kg||65}"
+      <input type="range" id="sl-goal-w" min="40" max="200" value="${p?.goal_weight_kg || 65}"
         oninput="document.getElementById('lbl-goal-w').textContent=this.value+' kg'"/>
     </div>
 
     <div class="field" style="margin-top:8px">
       <label>Aktivita</label>
       <select id="p-activity">
-        <option value="sedentary" ${p?.activity==='sedentary'?'selected':''}>Sedavý</option>
-        <option value="light"     ${(p?.activity==='light'||!p?.activity)?'selected':''}>Lehce aktivní</option>
-        <option value="moderate"  ${p?.activity==='moderate'?'selected':''}>Středně aktivní</option>
-        <option value="active"    ${p?.activity==='active'?'selected':''}>Velmi aktivní</option>
+        <option value="sedentary" ${p?.activity === 'sedentary' ? 'selected' : ''}>Sedavý</option>
+        <option value="light"     ${(p?.activity === 'light' || !p?.activity) ? 'selected' : ''}>Lehce aktivní</option>
+        <option value="moderate"  ${p?.activity === 'moderate' ? 'selected' : ''}>Středně aktivní</option>
+        <option value="active"    ${p?.activity === 'active' ? 'selected' : ''}>Velmi aktivní</option>
       </select>
     </div>
 
@@ -759,11 +777,11 @@ async function renderProfile() {
 
 async function saveProfile() {
   const payload = {
-    weight_kg:      parseFloat(document.getElementById('sl-weight').value),
-    height_cm:      parseInt(document.getElementById('sl-height').value),
+    weight_kg: parseFloat(document.getElementById('sl-weight').value),
+    height_cm: parseInt(document.getElementById('sl-height').value),
     goal_weight_kg: parseFloat(document.getElementById('sl-goal-w').value),
-    activity:       document.getElementById('p-activity').value,
-    goal:           window._getProfileGoal?.() || 'fit',
+    activity: document.getElementById('p-activity').value,
+    goal: window._getProfileGoal?.() || 'fit',
   };
   const data = await api('profile', { method: 'PATCH', body: JSON.stringify(payload) });
   if (data) {
