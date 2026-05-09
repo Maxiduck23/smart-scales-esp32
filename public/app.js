@@ -275,7 +275,7 @@ function toggleDark() {
 function renderLogin() {
   document.getElementById('app').innerHTML =
     '<div class="auth-wrap">'
-    + '<div class="auth-logo">⚖️</div>'
+    + '<div class="auth-logo"><img src="/logo.svg" class="auth-logo-img" alt="Chytrá váha"></div>'
     + '<div class="auth-title">Chytrá váha</div>'
     + '<div class="auth-sub">Přihlaste se ke svému účtu</div>'
     + '<div class="auth-card">'
@@ -328,7 +328,7 @@ var regData = {};
 function renderRegisterPage(step) {
   step = step || 1;
   var html = '<div class="auth-wrap">'
-    + '<div class="auth-logo">⚖️</div>'
+    + '<div class="auth-logo"><img src="/logo.svg" class="auth-logo-img" alt="Chytrá váha"></div>'
     + '<div class="auth-title">Registrace</div>'
     + '<div class="auth-sub">Krok ' + step + ' ze 2</div>'
     + '<div class="step-indicator">'
