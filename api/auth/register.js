@@ -4,13 +4,12 @@ import jwt from 'jsonwebtoken';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { email, password, name } = req.body;
-
+  const { email, password, name, birth_year, height_cm, weight_kg, goal_weight_kg, goal, activity } = req.body;
   const hash = await bcrypt.hash(password, 10);
 
   const { data, error } = await supabase
     .from('users')
-    .insert({ email, password: hash, name })
+    .insert({ email, password: hash, name, birth_year, height_cm, weight_kg, goal_weight_kg, goal, activity })
     .select()
     .single();
 
