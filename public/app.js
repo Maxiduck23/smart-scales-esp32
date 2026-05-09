@@ -689,9 +689,17 @@ async function removeFavorite(productId) {
   else showToast('❌ Nepodařilo se odebrat z oblíbených');
 }
 async function toggleFavorite(productId) {
-  if (isFavoriteProduct(productId)) await removeFavorite(productId); else await addFavorite(productId);
-  var q = document.getElementById('search-input');
-  if (q && q.value.trim()) await searchFood();
+  if (isFavoriteProduct(productId)) {
+    await removeFavorite(productId);
+  } else {
+    await addFavorite(productId);
+  }
+  // Obnov hvězdičky na místě bez nového hledání
+  document.querySelectorAll('.fav-btn').forEach(function (btn) {
+    var pid = parseInt(btn.getAttribute('data-pid'));
+    btn.textContent = isFavoriteProduct(pid) ? '⭐' : '☆';
+  });
+  renderFavoriteProducts();
 }
 function renderFavoriteProducts() {
   var box = document.getElementById('favorite-products');
@@ -945,24 +953,50 @@ function closeScanner() {
 }
 
 async function handleScannedBarcode(barcode) {
-  var input = document.getElementById('search-input'); if (input) input.value = '';
-  var results = document.getElementById('search-results'); if (!results) return;
-  results.innerHTML = '<div class="barcode-badge">🔖 ' + barcode + '</div><div class="loading-text">Hledám produkt...</div>';
+  var input = document.getElementById('search-input');
+  if (input) input.value = '';
+  var results = document.getElementById('search-results');
+  if (!results) return;
+  results.innerHTML = '<div class="barcode-badge">🔖 ' + barcode + '</div>'
+    + '<div class="loading-text">Hledám produkt...</div>';
+
   var data = await api('products?barcode=' + encodeURIComponent(barcode));
   if (!data || !data.length) {
-    results.innerHTML = '<div class="barcode-badge">🔖 ' + barcode + '</div><div class="loading-text">Produkt nenalezen — zkuste textové vyhledávání nebo ➕ ruční zadání</div>'; return;
+    results.innerHTML = '<div class="barcode-badge">🔖 ' + barcode + '</div>'
+      + '<div class="loading-text">Produkt nenalezen — zkuste textové vyhledávání nebo ➕ ruční zadání</div>';
+    return;
   }
+
   productsCache = {};
   data.forEach(function (p) { productsCache[p.id] = p; });
+
   var html = '<div class="barcode-badge">🔖 ' + barcode + '</div>';
   data.forEach(function (p) {
-    var imgHtml = p.image_url ? '<img class="product-img" src="' + p.image_url + '" alt="">' : '<div class="product-img-placeholder">🥫</div>';
-    var macros = p.calories + ' kcal/100g · B' + (p.protein_g != null ? p.protein_g : '?') + 'g T' + (p.fat_g != null ? p.fat_g : '?') + 'g S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
-    html += '<div class="product-result">' + imgHtml + '<div class="product-info"><div class="product-name">' + p.name + '</div><div class="product-kcal">' + macros + '</div></div>'
-      + '<div class="product-add"><input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
-      + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button></div></div>';
+    var imgHtml = p.image_url
+      ? '<img class="product-img" src="' + p.image_url + '" alt="">'
+      : '<div class="product-img-placeholder">🥫</div>';
+    var macros = p.calories + ' kcal/100g · B' + (p.protein_g != null ? p.protein_g : '?')
+      + 'g T' + (p.fat_g != null ? p.fat_g : '?')
+      + 'g S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
+
+    html += '<div class="product-result">' + imgHtml
+      + '<div class="product-info">'
+      + '<div class="product-name">' + escapeHtml(p.name) + '</div>'
+      + '<div class="product-kcal">' + macros + '</div>'
+      + '</div>'
+      + '<div class="product-add">'
+      + '<button class="btn btn-icon fav-btn" data-pid="' + p.id + '" title="Oblíbené">'
+      + (isFavoriteProduct(p.id) ? '⭐' : '☆')
+      + '</button>'
+      + '<input type="number" class="grams-input" data-pid="' + p.id
+      + '" value="100" min="1" style="width:60px"/>'
+      + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
+      + '</div></div>';
   });
+
   results.innerHTML = html;
+
+  // Listener pro přidání jídla
   results.querySelectorAll('.add-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var pid = btn.getAttribute('data-pid');
@@ -970,7 +1004,15 @@ async function handleScannedBarcode(barcode) {
       addMeal(pid, parseInt(inp ? inp.value : 100) || 100);
     });
   });
+
+  // Listener pro oblíbené ← tohle chybělo!
+  results.querySelectorAll('.fav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      toggleFavorite(parseInt(btn.getAttribute('data-pid')));
+    });
+  });
 }
+
 
 function scanForManual() {
   if (document.getElementById('scanner-modal')) return;
