@@ -72,8 +72,17 @@ body {
 }
 
 .auth-logo {
-    font-size: 36px;
-    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.auth-logo-img {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    display: block;
 }
 
 .auth-title {
