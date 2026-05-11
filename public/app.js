@@ -442,19 +442,52 @@ function barRowHtml(name, id, color) {
 function barRow(name, id, color) { return barRowHtml(name, id, color); }
 
 // ── Weight polling ────────────────────────────────────
+var _lastWeightReceivedAt = 0;
+var WEIGHT_TIMEOUT_MS = 10000; // 10 sekund bez dat → reset
+
 function startWeightPolling() {
   clearWeightInterval();
   weightIntervalId = setInterval(async function () {
-    if (!document.getElementById('w-val')) { clearWeightInterval(); return; }
+    var valEl = document.getElementById('w-val');
+    if (!valEl) { clearWeightInterval(); return; }
+
     var data = await api('weight');
+
     if (data && data.grams != null) {
-      document.getElementById('w-val').innerHTML = data.grams + '<span>g</span>';
-      var dot = document.getElementById('w-dot'), st = document.getElementById('w-status');
+      // Máme data → aktualizuj
+      _lastWeightReceivedAt = Date.now();
+      valEl.innerHTML = data.grams + '<span>g</span>';
+      var dot = document.getElementById('w-dot');
+      var st = document.getElementById('w-status');
       if (dot) dot.classList.add('active');
       if (st) st.textContent = '✓ Váha stabilizována';
+
+      // Pokud váha poslala produkt, zobraz ho
+      if (data.product && data.product.name) {
+        var prodEl = document.getElementById('w-product');
+        if (prodEl) {
+          prodEl.textContent = data.product.name;
+          prodEl.style.display = 'block';
+        }
+      }
+    } else {
+      // Žádná data — zkontroluj timeout
+      var elapsed = Date.now() - _lastWeightReceivedAt;
+      if (_lastWeightReceivedAt > 0 && elapsed > WEIGHT_TIMEOUT_MS) {
+        // Reset
+        valEl.innerHTML = '--<span>g</span>';
+        var dot = document.getElementById('w-dot');
+        var st = document.getElementById('w-status');
+        if (dot) dot.classList.remove('active');
+        if (st) st.textContent = 'Čekám na váhu...';
+        var prodEl = document.getElementById('w-product');
+        if (prodEl) prodEl.style.display = 'none';
+        _lastWeightReceivedAt = 0; // jen jednou resetujeme
+      }
     }
-  }, 1000);
+  }, 500); // 500ms místo 1000ms — 2× rychlejší
 }
+
 
 // ── Macros ────────────────────────────────────────────
 function calcMacroGoals(p) {
@@ -673,26 +706,57 @@ async function loadFavorites(force) {
 }
 function applyFavoritesCache(favorites) {
   favoritesCache = {};
-  (favorites || []).forEach(function (f) { favoritesCache[f.product_id] = f; });
+  (favorites || []).forEach(function (f) {
+    favoritesCache[String(f.product_id)] = f;
+  });
 }
-function isFavoriteProduct(productId) { return !!favoritesCache[productId]; }
 
+function isFavoriteProduct(productId) {
+  return !!favoritesCache[String(productId)];
+}
 async function addFavorite(productId) {
-  var data = await api('favorites', { method: 'POST', body: JSON.stringify({ product_id: parseInt(productId) }) });
-  if (data && data.ok) { cacheRemove('favorites'); await loadFavorites(true); showToast('⭐ Přidáno do oblíbených'); renderFavoriteProducts(); }
-  else if (data && data.error === 'Already in favorites') showToast('Už je v oblíbených');
-  else showToast('❌ Nepodařilo se přidat do oblíbených');
+  var pid = String(productId); // UUID musí být string, ne parseInt
+  var data = await api('favorites', { method: 'POST', body: JSON.stringify({ product_id: pid }) });
+  if (data && data.ok) {
+    cacheRemove('favorites');
+    await loadFavorites(true);
+    showToast('⭐ Přidáno do oblíbených');
+    renderFavoriteProducts();
+  } else if (data && data.error === 'Already in favorites') {
+    showToast('Už je v oblíbených');
+  } else {
+    showToast('❌ Nepodařilo se přidat');
+  }
 }
+
+
 async function removeFavorite(productId) {
-  var data = await api('favorites', { method: 'DELETE', body: JSON.stringify({ product_id: parseInt(productId) }) });
-  if (data && data.ok) { cacheRemove('favorites'); await loadFavorites(true); showToast('Odebráno z oblíbených'); renderFavoriteProducts(); }
-  else showToast('❌ Nepodařilo se odebrat z oblíbených');
+  var pid = String(productId);
+  var data = await api('favorites', { method: 'DELETE', body: JSON.stringify({ product_id: pid }) });
+  if (data && data.ok) {
+    cacheRemove('favorites');
+    await loadFavorites(true);
+    showToast('Odebráno z oblíbených');
+    renderFavoriteProducts();
+  } else {
+    showToast('❌ Nepodařilo se odebrat');
+  }
 }
+
 async function toggleFavorite(productId) {
-  if (isFavoriteProduct(productId)) await removeFavorite(productId); else await addFavorite(productId);
-  var q = document.getElementById('search-input');
-  if (q && q.value.trim()) await searchFood();
+  var pid = String(productId);
+  if (isFavoriteProduct(pid)) {
+    await removeFavorite(pid);
+  } else {
+    await addFavorite(pid);
+  }
+  document.querySelectorAll('.fav-btn').forEach(function (btn) {
+    var p = String(btn.getAttribute('data-pid'));
+    btn.textContent = isFavoriteProduct(p) ? '⭐' : '☆';
+  });
+  renderFavoriteProducts();
 }
+
 function renderFavoriteProducts() {
   var box = document.getElementById('favorite-products');
   if (!box) return;
@@ -710,12 +774,14 @@ function renderFavoriteProducts() {
   box.innerHTML = html;
 }
 async function addFavoriteMeal(productId) {
-  var inp = document.querySelector('.favorite-grams[data-pid="' + productId + '"]');
+  var pid = String(productId);
+  var inp = document.querySelector('.favorite-grams[data-pid="' + pid + '"]');
   var grams = parseInt(inp ? inp.value : 100) || 100;
-  var favorite = favoritesCache[productId];
-  if (favorite && favorite.products) productsCache[productId] = favorite.products;
-  await addMeal(productId, grams);
+  var favorite = favoritesCache[pid];
+  if (favorite && favorite.products) productsCache[pid] = favorite.products;
+  await addMeal(pid, grams);
 }
+
 
 // ── Search + Add Meal ─────────────────────────────────
 async function searchFood() {
@@ -753,7 +819,7 @@ async function searchFood() {
     });
   });
   results.querySelectorAll('.fav-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () { toggleFavorite(btn.getAttribute('data-pid')); });
+    btn.addEventListener('click', function () { toggleFavorite(String(btn.getAttribute('data-pid'))); });
   });
 }
 
