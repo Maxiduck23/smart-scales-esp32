@@ -352,6 +352,7 @@ async function renderDashboard() {
     + '<div class="weight-hero-label">Aktuální váha ze senzoru</div>'
     + '<div class="weight-hero-value" id="w-val">--<span>g</span></div>'
     + '<div class="weight-hero-status"><div class="status-dot" id="w-dot"></div><span id="w-status">Čekám na váhu...</span></div>'
+    + '<div class="weight-hero-product" id="w-product"></div>'
     + '</div>'
     + '<div class="weight-hero-icon"><img src="/logo.svg" alt=""/></div>'
     + '</div>'
@@ -376,6 +377,7 @@ async function renderDashboard() {
     + '<button class="scan-btn" onclick="openScanner()" title="Skenovat">📷</button>'
     + '<button class="manual-open-btn" onclick="openManualProduct()" title="Přidat vlastní">➕</button>'
     + '</div>'
+    + '<button class="weigh-btn" onclick="openWeighModal()">⚖️ Vážit produkt (senzor nebo ručně)</button>'
     + '<div id="search-results"></div>'
     + '</div>'
     + '<div class="section-card">'
@@ -769,6 +771,184 @@ async function addMeal(pid, grams) {
   var p = productsCache[pid];
   await api('meals', { method: 'POST', body: JSON.stringify({ product_id: pid, weight_g: grams, meal_type: 'snack' }) });
   showToast('✓ ' + (p ? p.name : 'produkt') + ' přidáno');
+  await loadMeals();
+}
+
+// ── Weight product modal ──────────────────────────────
+var _weightModalTab = 'sensor';
+var _weightModalSearchTimer = null;
+var _weightModalProduct = null;
+var _wmPollId = null;
+
+function openWeighModal() {
+  if (document.getElementById('weigh-modal')) return;
+  var modal = document.createElement('div');
+  modal.id = 'weigh-modal';
+  modal.innerHTML = buildWeighModal();
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeWeighModal(); });
+  modal.querySelectorAll('.wm-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      _weightModalTab = btn.dataset.tab;
+      modal.querySelectorAll('.wm-tab').forEach(function (b) { b.classList.remove('active'); });
+      modal.querySelectorAll('.wm-pane').forEach(function (pane) { pane.classList.remove('active'); });
+      btn.classList.add('active');
+      modal.querySelector('.wm-pane[data-pane="' + _weightModalTab + '"]').classList.add('active');
+      if (_weightModalTab === 'sensor') startWeighModalPolling();
+      else stopWeighModalPolling();
+    });
+  });
+
+  var searchInp = modal.querySelector('#wm-search');
+  if (searchInp) {
+    searchInp.addEventListener('input', function () {
+      clearTimeout(_weightModalSearchTimer);
+      _weightModalSearchTimer = setTimeout(function () { doWeighModalSearch(searchInp.value.trim()); }, 400);
+    });
+    searchInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') doWeighModalSearch(searchInp.value.trim()); });
+  }
+
+  renderSelectedWeighProduct();
+  if (_weightModalTab === 'sensor') startWeighModalPolling();
+}
+
+function closeWeighModal() {
+  stopWeighModalPolling();
+  clearTimeout(_weightModalSearchTimer);
+  var modal = document.getElementById('weigh-modal');
+  if (modal) modal.remove();
+}
+
+function buildWeighModal() {
+  return '<div class="wm-box"><div class="wm-handle"></div><div class="wm-title">⚖️ Přidat jídlo váhou</div>'
+    + '<div class="wm-tabs">'
+    + '<button class="wm-tab' + (_weightModalTab === 'sensor' ? ' active' : '') + '" data-tab="sensor">📡 Senzor</button>'
+    + '<button class="wm-tab' + (_weightModalTab === 'manual' ? ' active' : '') + '" data-tab="manual">✏️ Ručně</button>'
+    + '</div>'
+    + '<div class="wm-pane' + (_weightModalTab === 'sensor' ? ' active' : '') + '" data-pane="sensor">'
+    + '<div class="wm-sensor-display"><div class="wm-sensor-value" id="wm-val">--<span>g</span></div>'
+    + '<div class="wm-sensor-status"><div class="dot" id="wm-dot"></div><span id="wm-status">Čekám na senzor...</span></div></div>'
+    + '</div>'
+    + '<div class="wm-pane' + (_weightModalTab === 'manual' ? ' active' : '') + '" data-pane="manual">'
+    + '<div class="field"><label>Gramáž (g)</label><input type="number" id="wm-manual-grams" placeholder="100" min="1" value="100"/></div>'
+    + '</div>'
+    + '<div class="field" style="margin-top:8px"><label>Produkt</label><input type="text" id="wm-search" placeholder="Hledat produkt nebo zadat čárový kód..."/></div>'
+    + '<div id="wm-selected" class="wm-selected" style="display:none"></div>'
+    + '<div id="wm-results" class="wm-results"></div>'
+    + '<button class="btn btn-primary" style="margin-top:12px" onclick="doAddWeighMeal()">✓ Přidat do deníku</button>'
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px" onclick="closeWeighModal()">Zrušit</button>'
+    + '</div>';
+}
+
+function startWeighModalPolling() {
+  stopWeighModalPolling();
+  _wmPollId = setInterval(async function () {
+    var valEl = document.getElementById('wm-val');
+    if (!valEl) { stopWeighModalPolling(); return; }
+    var data = await api('weight');
+    if (data && data.grams != null) {
+      valEl.innerHTML = data.grams + '<span>g</span>';
+      var dot = document.getElementById('wm-dot');
+      var st = document.getElementById('wm-status');
+      if (dot) dot.classList.add('ok');
+      if (st) st.textContent = '✓ Stabilní';
+    }
+  }, 500);
+}
+
+function stopWeighModalPolling() {
+  if (_wmPollId) { clearInterval(_wmPollId); _wmPollId = null; }
+}
+
+async function doWeighModalSearch(q) {
+  var box = document.getElementById('wm-results');
+  if (!box) return;
+  if (!q) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="loading-text" style="font-size:13px;padding:8px">Hledám...</div>';
+
+  var data = /^\d{8,14}$/.test(q)
+    ? await api('products?barcode=' + encodeURIComponent(q))
+    : await api('products?q=' + encodeURIComponent(q));
+
+  if (!data || !data.length) {
+    box.innerHTML = '<div class="loading-text" style="font-size:13px;padding:8px">Nic nenalezeno</div>';
+    return;
+  }
+
+  var html = '';
+  data.forEach(function (product) {
+    productsCache[product.id] = product;
+    html += '<button type="button" class="wm-result" data-pid="' + escapeHtml(product.id) + '">'
+      + '<span class="wm-result-name">' + escapeHtml(product.name) + '</span>'
+      + '<span class="wm-result-meta">' + (product.calories || '?') + ' kcal/100g</span>'
+      + '</button>';
+  });
+  box.innerHTML = html;
+  box.querySelectorAll('.wm-result').forEach(function (btn) {
+    btn.addEventListener('click', function () { selectWeighProduct(btn.getAttribute('data-pid')); });
+  });
+}
+
+function selectWeighProduct(id) {
+  var product = productsCache[id];
+  if (!product) return;
+  _weightModalProduct = { id: String(id), name: product.name };
+  renderSelectedWeighProduct();
+  var box = document.getElementById('wm-results');
+  var srch = document.getElementById('wm-search');
+  if (box) box.innerHTML = '';
+  if (srch) srch.value = '';
+}
+
+function renderSelectedWeighProduct() {
+  var sel = document.getElementById('wm-selected');
+  if (sel) {
+    if (_weightModalProduct) {
+      sel.textContent = '✓ ' + _weightModalProduct.name;
+      sel.style.display = 'block';
+    } else {
+      sel.textContent = '';
+      sel.style.display = 'none';
+    }
+  }
+  var heroProduct = document.getElementById('w-product');
+  if (heroProduct) {
+    if (_weightModalProduct) {
+      heroProduct.textContent = 'Vybraný produkt: ' + _weightModalProduct.name;
+      heroProduct.style.display = 'block';
+    } else {
+      heroProduct.textContent = '';
+      heroProduct.style.display = 'none';
+    }
+  }
+}
+
+async function doAddWeighMeal() {
+  if (!_weightModalProduct) { showToast('⚠ Vyberte produkt'); return; }
+
+  var grams;
+  if (_weightModalTab === 'sensor') {
+    var valEl = document.getElementById('wm-val');
+    var txt = valEl ? valEl.textContent.replace('g', '').trim() : '';
+    grams = parseFloat(txt) || 0;
+    if (grams <= 0) { showToast('⚠ Senzor nezměřil váhu'); return; }
+  } else {
+    var manualInput = document.getElementById('wm-manual-grams');
+    grams = parseInt(manualInput ? manualInput.value : '', 10) || 0;
+    if (grams <= 0) { showToast('⚠ Zadejte gramáž'); return; }
+  }
+
+  var addedProductName = _weightModalProduct.name;
+  await api('meals', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: _weightModalProduct.id, weight_g: grams, meal_type: 'snack' })
+  });
+
+  closeWeighModal();
+  _weightModalProduct = null;
+  renderSelectedWeighProduct();
+  showToast('✓ ' + addedProductName + ' přidáno (' + grams + ' g)');
   await loadMeals();
 }
 
