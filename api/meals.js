@@ -14,20 +14,22 @@ export default async function handler(req, res) {
         const { data, error } = await supabase
             .from('meals')
             .select(`
-        id,
-        weight_g,
-        meal_type,
-        eaten_at,
-        products (
-          name,
-          image_url,
-          calories,
-          protein_g,
-          fat_g,
-          carbs_g,
-          fiber_g
-        )
-      `)
+            id,
+            product_id,
+            weight_g,
+            meal_type,
+            eaten_at,
+            products (
+            id,
+            name,
+            image_url,
+            calories,
+            protein_g,
+            fat_g,
+            carbs_g,
+            fiber_g
+            )
+            `)
             .eq('user_id', user.userId)
             .gte('eaten_at', `${dnes}T00:00:00`)
             .lte('eaten_at', `${dnes}T23:59:59`)
@@ -76,13 +78,21 @@ export default async function handler(req, res) {
 
     // DELETE → smaže jídlo
     if (req.method === 'DELETE') {
-        const { meal_id } = req.body;
+        const { meal_id } = req.body || {};
 
-        await supabase
+        if (!meal_id) {
+            return res.status(400).json({ error: 'Missing meal_id' });
+        }
+
+        const { error } = await supabase
             .from('meals')
             .delete()
             .eq('id', meal_id)
-            .eq('user_id', user.userId); // bezpečnost: jen vlastní jídla
+            .eq('user_id', user.userId);
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
 
         return res.json({ ok: true });
     }
