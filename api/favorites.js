@@ -10,11 +10,13 @@ function normalizeProductId(value) {
 async function attachProductsToFavorites(favorites) {
     if (!favorites || favorites.length === 0) return [];
 
-    const productIds = [...new Set(
-        favorites
-            .map(f => String(f.product_id))
-            .filter(Boolean)
-    )];
+    const productIds = [
+        ...new Set(
+            favorites
+                .map(f => String(f.product_id))
+                .filter(Boolean)
+        )
+    ];
 
     if (productIds.length === 0) {
         return favorites.map(f => ({ ...f, products: null }));
@@ -74,8 +76,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Missing product_id' });
             }
 
-            // Check duplicate manually instead of upsert.
-            // This avoids onConflict/schema-cache problems.
+            // Check duplicate manually.
             const { data: existing, error: existingError } = await supabase
                 .from('favorite_products')
                 .select('id, product_id, created_at')
