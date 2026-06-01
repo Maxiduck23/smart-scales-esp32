@@ -2613,3 +2613,215 @@ body.dark .water-fill-wrap {
 
 /* ── Favicon cache bust hint (neviditelné, jen pro dokumentaci) ──────────────── */
 /* favicon: /logo.svg + /favicon.ico záloha v public/ */
+#product-weight-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9200;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: modalSlideIn 0.25s ease;
+}
+
+.pwm-box {
+    background: var(--card);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 20px 16px 28px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.pwm-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 0 auto 12px;
+}
+
+.pwm-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.pwm-product-name {
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    margin-bottom: 14px;
+}
+
+.pwm-tabs {
+    display: flex;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.pwm-tab {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: var(--card);
+    color: var(--text-2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.pwm-tab.active {
+    background: var(--green);
+    color: #fff;
+}
+
+.pwm-tab:not(:last-child) {
+    border-right: 1.5px solid var(--border);
+}
+
+.pwm-pane {
+    display: none;
+}
+
+.pwm-pane.active {
+    display: block;
+}
+
+.pwm-scale-card {
+    border: 2px dashed var(--green-light);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    margin-bottom: 12px;
+    text-align: center;
+    background: var(--green-faint);
+}
+
+.pwm-scale-value {
+    font-size: 42px;
+    font-weight: 600;
+    color: var(--green);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: -2px;
+}
+
+.pwm-scale-value span {
+    font-size: 20px;
+    margin-left: 4px;
+    font-weight: 400;
+    color: var(--text-2);
+}
+
+.pwm-scale-status {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.pwm-scale-status::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.pwm-cancel {
+    margin-top: 8px;
+    width: 100%;
+    display: block;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+
+
+/* ── Nutri-score grafika (kolečka) ───────────────────────────────────────────────────────── */
+.nutriscore-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nutriscore-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-2);
+}
+
+.nutriscore-ring {
+    display: flex;
+    gap: 2px;
+}
+
+.nutriscore-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+}
+
+/* A–E podle abecedy (zelená > červená) */
+.nutriscore-dot.a {
+    background: #006424;
+    border-color: #006424;
+}
+
+.nutriscore-dot.b {
+    background: #1e8a34;
+    border-color: #1e8a34;
+}
+
+.nutriscore-dot.c {
+    background: #ffc200;
+    border-color: #ffc200;
+}
+
+.nutriscore-dot.d {
+    background: #ed8d00;
+    border-color: #ed8d00;
+}
+
+.nutriscore-dot.e {
+    background: #e0301e;
+    border-color: #e0301e;
+}
