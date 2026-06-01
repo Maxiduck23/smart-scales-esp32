@@ -93,6 +93,22 @@ var cachedMacroGoals = { calories: 2000, protein: 150, carbs: 250, fat: 65 };
 var favoritesCache = {};
 var mealsCache = {};
 var productsCache = {};
+var latestSensorGrams = 0;
+var latestSensorAt = 0;
+
+function getSensorGramsOrDefault() {
+  return latestSensorGrams > 0 ? latestSensorGrams : 100;
+}
+
+function setSensorGramsToInputs(force) {
+  var grams = getSensorGramsOrDefault();
+
+  document.querySelectorAll('.grams-input, .favorite-grams, #wm-manual-grams, #mm-grams, #mm-paste-grams').forEach(function (inp) {
+    if (!inp) return;
+    if (!force && document.activeElement === inp) return;
+    inp.value = String(Math.round(grams));
+  });
+}
 var darkMode = localStorage.getItem('cv_dark') === '1';
 var waterReminderIntervalId = null;
 var waterReminderToastOpen = false;
@@ -347,15 +363,6 @@ async function renderDashboard() {
     + '<div class="greeting-time">' + g.period + '</div>'
     + '<div class="greeting-text">' + g.text + '</div>'
     + '</div>'
-    + '<div class="weight-hero">'
-    + '<div class="weight-hero-left">'
-    + '<div class="weight-hero-label">Aktuální váha ze senzoru</div>'
-    + '<div class="weight-hero-value" id="w-val">--<span>g</span></div>'
-    + '<div class="weight-hero-status"><div class="status-dot" id="w-dot"></div><span id="w-status">Čekám na váhu...</span></div>'
-    + '<div class="weight-hero-product" id="w-product"></div>'
-    + '</div>'
-    + '<div class="weight-hero-icon"><img src="/logo.svg" alt=""/></div>'
-    + '</div>'
     + '<div class="macro-grid">'
     + macroBox('kcal', '--', 'kcal', 'Energie', 'mb-kcal')
     + macroBox('protein', '--', 'g', 'Bílkoviny', 'mb-protein')
@@ -449,47 +456,26 @@ var WEIGHT_TIMEOUT_MS = 10000; // 10 sekund bez dat → reset
 
 function startWeightPolling() {
   clearWeightInterval();
-  weightIntervalId = setInterval(async function () {
-    var valEl = document.getElementById('w-val');
-    if (!valEl) { clearWeightInterval(); return; }
 
+  async function pollWeight() {
     var data = await api('weight');
 
     if (data && data.grams != null) {
-      // Máme data → aktualizuj
-      _lastWeightReceivedAt = Date.now();
-      valEl.innerHTML = data.grams + '<span>g</span>';
-      var dot = document.getElementById('w-dot');
-      var st = document.getElementById('w-status');
-      if (dot) dot.classList.add('active');
-      if (st) st.textContent = '✓ Váha stabilizována';
+      var grams = parseInt(data.grams, 10);
 
-      // Pokud váha poslala produkt, zobraz ho
-      if (data.product && data.product.name) {
-        var prodEl = document.getElementById('w-product');
-        if (prodEl) {
-          prodEl.textContent = data.product.name;
-          prodEl.style.display = 'block';
-        }
-      }
-    } else {
-      // Žádná data — zkontroluj timeout
-      var elapsed = Date.now() - _lastWeightReceivedAt;
-      if (_lastWeightReceivedAt > 0 && elapsed > WEIGHT_TIMEOUT_MS) {
-        // Reset
-        valEl.innerHTML = '--<span>g</span>';
-        var dot = document.getElementById('w-dot');
-        var st = document.getElementById('w-status');
-        if (dot) dot.classList.remove('active');
-        if (st) st.textContent = 'Čekám na váhu...';
-        var prodEl = document.getElementById('w-product');
-        if (prodEl) prodEl.style.display = 'none';
-        _lastWeightReceivedAt = 0; // jen jednou resetujeme
+      if (!isNaN(grams) && grams > 0) {
+        latestSensorGrams = grams;
+        latestSensorAt = Date.now();
+
+        // Podstav aktualni vahu do vsech poli gramaze
+        setSensorGramsToInputs(false);
       }
     }
-  }, 500); // 500ms místo 1000ms — 2× rychlejší
-}
+  }
 
+  pollWeight();
+  weightIntervalId = setInterval(pollWeight, 700);
+}
 
 // ── Macros ────────────────────────────────────────────
 function calcMacroGoals(p) {
@@ -753,7 +739,7 @@ async function toggleFavorite(productId) {
   }
   // Obnov hvězdičky na místě bez nového hledání
   document.querySelectorAll('.fav-btn').forEach(function (btn) {
-    var pid = parseInt(btn.getAttribute('data-pid'));
+    var pid = String(btn.getAttribute('data-pid'));
     btn.textContent = isFavoriteProduct(pid) ? '⭐' : '☆';
   });
   renderFavoriteProducts();
@@ -762,25 +748,69 @@ async function toggleFavorite(productId) {
 function renderFavoriteProducts() {
   var box = document.getElementById('favorite-products');
   if (!box) return;
+
   var favs = Object.values(favoritesCache || {});
-  if (!favs.length) { box.innerHTML = '<div class="empty"><div class="empty-icon">⭐</div>Zatím žádná oblíbená jídla</div>'; return; }
+
+  if (!favs.length) {
+    box.innerHTML = '<div class="empty"><div class="empty-icon">⭐</div>Zatím žádná oblíbená jídla</div>';
+    return;
+  }
+
+  var sensorGrams = getSensorGramsOrDefault();
   var html = '';
+
   favs.forEach(function (f) {
-    var p = f.products; if (!p) return;
-    html += '<div class="favorite-item"><div class="favorite-info"><div class="favorite-name">' + escapeHtml(p.name) + '</div>'
-      + '<div class="favorite-meta">' + (p.calories != null ? p.calories : '?') + ' kcal/100g</div></div>'
-      + '<div class="favorite-actions"><input type="number" class="favorite-grams" data-pid="' + p.id + '" value="100" min="1"/>'
-      + '<button class="btn btn-primary btn-sm" onclick="addFavoriteMeal(' + p.id + ')">Přidat</button>'
-      + '<button class="btn btn-icon" onclick="removeFavorite(' + p.id + ')" title="Odebrat">✕</button></div></div>';
+    var p = f.products;
+    if (!p) return;
+
+    var pid = String(p.id || f.product_id);
+
+    html += '<div class="favorite-item">'
+      + '<div class="favorite-info">'
+      + '<div class="favorite-name">' + escapeHtml(p.name) + '</div>'
+      + '<div class="favorite-meta">' + (p.calories != null ? p.calories : '?') + ' kcal/100g</div>'
+      + '</div>'
+      + '<div class="favorite-actions">'
+      + '<input type="number" class="favorite-grams" data-pid="' + pid + '" value="' + sensorGrams + '" min="1"/>'
+      + '<button class="btn btn-primary btn-sm fav-add-btn" data-pid="' + pid + '">Přidat</button>'
+      + '<button class="btn btn-icon fav-remove-btn" data-pid="' + pid + '" title="Odebrat">✕</button>'
+      + '</div>'
+      + '</div>';
   });
+
   box.innerHTML = html;
+
+  box.querySelectorAll('.fav-add-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = String(btn.getAttribute('data-pid'));
+      var inp = box.querySelector('.favorite-grams[data-pid="' + pid + '"]');
+      var grams = parseInt(inp ? inp.value : sensorGrams, 10) || sensorGrams;
+      addFavoriteMeal(pid, grams);
+    });
+  });
+
+  box.querySelectorAll('.fav-remove-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = String(btn.getAttribute('data-pid'));
+      removeFavorite(pid);
+    });
+  });
 }
-async function addFavoriteMeal(productId) {
+async function addFavoriteMeal(productId, gramsFromButton) {
   var pid = String(productId);
-  var inp = document.querySelector('.favorite-grams[data-pid="' + pid + '"]');
-  var grams = parseInt(inp ? inp.value : 100) || 100;
+
+  var grams = parseInt(gramsFromButton, 10);
+  if (!grams || grams <= 0) {
+    var inp = document.querySelector('.favorite-grams[data-pid="' + pid + '"]');
+    grams = parseInt(inp ? inp.value : getSensorGramsOrDefault(), 10) || getSensorGramsOrDefault();
+  }
+
   var favorite = favoritesCache[pid];
-  if (favorite && favorite.products) productsCache[pid] = favorite.products;
+
+  if (favorite && favorite.products) {
+    productsCache[pid] = favorite.products;
+  }
+
   await addMeal(pid, grams);
 }
 
@@ -801,6 +831,7 @@ async function searchFood() {
   productsCache = {};
   data.forEach(function (p) { productsCache[p.id] = p; });
   var html = '';
+  var sensorGrams = getSensorGramsOrDefault();
   data.forEach(function (p) {
     var imgHtml = p.image_url ? '<img class="product-img" src="' + p.image_url + '" alt="">' : '<div class="product-img-placeholder">🥫</div>';
     var macros = p.calories + ' kcal/100g · B' + (p.protein_g != null ? p.protein_g : '?') + 'g T' + (p.fat_g != null ? p.fat_g : '?') + 'g S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
@@ -808,7 +839,7 @@ async function searchFood() {
       + '<div class="product-info"><div class="product-name">' + escapeHtml(p.name) + '</div><div class="product-kcal">' + macros + '</div></div>'
       + '<div class="product-add">'
       + '<button class="btn btn-icon fav-btn" data-pid="' + p.id + '" title="Oblíbené">' + (isFavoriteProduct(p.id) ? '⭐' : '☆') + '</button>'
-      + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="100" min="1" style="width:60px"/>'
+      + '<input type="number" class="grams-input" data-pid="' + p.id + '" value="' + sensorGrams + '" min="1" style="width:60px"/>'
       + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
       + '</div></div>';
   });
@@ -1207,7 +1238,7 @@ async function handleScannedBarcode(barcode) {
 
   productsCache = {};
   data.forEach(function (p) { productsCache[p.id] = p; });
-
+  var sensorGrams = getSensorGramsOrDefault();
   var html = '<div class="barcode-badge">🔖 ' + barcode + '</div>';
   data.forEach(function (p) {
     var imgHtml = p.image_url
@@ -1227,7 +1258,7 @@ async function handleScannedBarcode(barcode) {
       + (isFavoriteProduct(p.id) ? '⭐' : '☆')
       + '</button>'
       + '<input type="number" class="grams-input" data-pid="' + p.id
-      + '" value="100" min="1" style="width:60px"/>'
+      + '" value="' + sensorGrams + '" min="1" style="width:60px"/>'
       + '<button class="btn btn-primary btn-sm add-btn" data-pid="' + p.id + '">+</button>'
       + '</div></div>';
   });
@@ -1246,7 +1277,7 @@ async function handleScannedBarcode(barcode) {
   // Listener pro oblíbené ← tohle chybělo!
   results.querySelectorAll('.fav-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      toggleFavorite(parseInt(btn.getAttribute('data-pid')));
+      toggleFavorite(String(btn.getAttribute('data-pid')));
     });
   });
 }
