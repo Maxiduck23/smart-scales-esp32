@@ -96,8 +96,19 @@ var productsCache = {};
 var latestSensorGrams = 0;
 var latestSensorAt = 0;
 
-function getSensorGramsOrDefault() {
-  return latestSensorGrams > 0 ? latestSensorGrams : 100;
+async function refreshSensorGramsOnce() {
+  var data = await api('weight');
+
+  if (data && data.grams != null) {
+    var grams = parseInt(data.grams, 10);
+
+    if (!isNaN(grams) && grams > 0) {
+      latestSensorGrams = grams;
+      latestSensorAt = Date.now();
+    }
+  }
+
+  return getSensorGramsOrDefault();
 }
 
 function setSensorGramsToInputs(force) {
@@ -831,7 +842,7 @@ async function searchFood() {
   productsCache = {};
   data.forEach(function (p) { productsCache[p.id] = p; });
   var html = '';
-  var sensorGrams = getSensorGramsOrDefault();
+  var sensorGrams = await refreshSensorGramsOnce();
   data.forEach(function (p) {
     var imgHtml = p.image_url ? '<img class="product-img" src="' + p.image_url + '" alt="">' : '<div class="product-img-placeholder">🥫</div>';
     var macros = p.calories + ' kcal/100g · B' + (p.protein_g != null ? p.protein_g : '?') + 'g T' + (p.fat_g != null ? p.fat_g : '?') + 'g S' + (p.carbs_g != null ? p.carbs_g : '?') + 'g';
@@ -857,9 +868,31 @@ async function searchFood() {
 }
 
 async function addMeal(pid, grams) {
+  pid = String(pid);
+  grams = parseInt(grams, 10);
+
+  if (!pid || !grams || grams <= 0) {
+    showToast('❌ Chybný produkt nebo gramáž');
+    return;
+  }
+
   var p = productsCache[pid];
-  await api('meals', { method: 'POST', body: JSON.stringify({ product_id: pid, weight_g: grams, meal_type: 'snack' }) });
-  showToast('✓ ' + (p ? p.name : 'produkt') + ' přidáno');
+
+  var data = await api('meals', {
+    method: 'POST',
+    body: JSON.stringify({
+      product_id: pid,
+      weight_g: grams,
+      meal_type: 'snack'
+    })
+  });
+
+  if (!data || data.error) {
+    showToast('❌ Nepodařilo se přidat: ' + (data && data.error ? data.error : 'zkontroluj přihlášení'));
+    return;
+  }
+
+  showToast('✓ ' + (p ? p.name : 'produkt') + ' přidáno (' + grams + ' g)');
   await loadMeals();
 }
 
