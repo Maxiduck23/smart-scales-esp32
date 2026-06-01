@@ -2825,121 +2825,229 @@ body.dark .water-fill-wrap {
     background: #e0301e;
     border-color: #e0301e;
 }
+
 /* ═══════════════════════════════
    PRODUCT WEIGHT MODAL
    ═══════════════════════════════ */
 
 #product-weight-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 9500;
-  background: rgba(0, 0, 0, 0.78);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(0, 0, 0, 0.78);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
 }
 
 #product-weight-modal .pwm-box {
-  width: 100%;
-  max-width: 520px;
-  max-height: 92vh;
-  overflow-y: auto;
-  background: var(--card);
-  color: var(--text);
-  border-radius: var(--radius) var(--radius) 0 0;
-  padding: 18px 18px 28px;
-  box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 520px;
+    max-height: 92vh;
+    overflow-y: auto;
+    background: var(--card);
+    color: var(--text);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 18px 18px 28px;
+    box-shadow: var(--shadow-lg);
 }
 
 .pwm-handle {
-  width: 42px;
-  height: 4px;
-  border-radius: 99px;
-  margin: 0 auto 14px;
-  background: var(--border);
+    width: 42px;
+    height: 4px;
+    border-radius: 99px;
+    margin: 0 auto 14px;
+    background: var(--border);
 }
 
 .pwm-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--green);
-  text-align: center;
-  margin-bottom: 4px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--green);
+    text-align: center;
+    margin-bottom: 4px;
 }
 
 .pwm-product-name {
-  text-align: center;
-  font-size: 14px;
-  color: var(--text-2);
-  margin-bottom: 14px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-2);
+    margin-bottom: 14px;
 }
 
 .pwm-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
 }
 
 .pwm-tab {
-  border: 1.5px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  border-radius: var(--radius-sm);
-  padding: 12px 8px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .pwm-tab.active {
-  border-color: var(--green);
-  background: var(--green-light);
-  color: var(--green);
+    border-color: var(--green);
+    background: var(--green-light);
+    color: var(--green);
 }
 
 .pwm-pane {
-  display: none;
+    display: none;
 }
 
 .pwm-pane.active {
-  display: block;
+    display: block;
 }
 
 .pwm-scale-card {
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px 12px;
-  text-align: center;
-  margin-bottom: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 12px;
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 .pwm-scale-value {
-  font-family: 'DM Mono', monospace;
-  font-size: 48px;
-  line-height: 1;
-  color: var(--green);
-  letter-spacing: -1px;
+    font-family: 'DM Mono', monospace;
+    font-size: 48px;
+    line-height: 1;
+    color: var(--green);
+    letter-spacing: -1px;
 }
 
 .pwm-scale-value span {
-  font-size: 20px;
-  opacity: 0.7;
-  margin-left: 4px;
+    font-size: 20px;
+    opacity: 0.7;
+    margin-left: 4px;
 }
 
 .pwm-scale-status {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-3);
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-3);
 }
 
 .pwm-cancel {
-  width: 100%;
-  margin-top: 10px;
+    width: 100%;
+    margin-top: 10px;
 }
 
 .product-result .select-product-btn {
-  white-space: nowrap;
+    white-space: nowrap;
+}
+
+#scanner-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0, 0, 0, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.scan-box {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: var(--shadow-lg);
+}
+
+.scan-title {
+    color: var(--green);
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 16px;
+    user-select: none;
+}
+
+#qr-reader {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #000;
+    border: 1px solid var(--border);
+}
+
+#qr-reader video {
+    width: 100% !important;
+    border-radius: 16px;
+}
+
+.scan-hint {
+    color: var(--text-2);
+    background: var(--green-faint);
+    border: 1px solid var(--green-light);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    font-size: 14px;
+    text-align: center;
+    user-select: none;
+}
+
+/* Internal html5-qrcode texts/buttons */
+#qr-reader,
+#qr-reader * {
+    box-sizing: border-box;
+}
+
+#qr-reader__dashboard_section,
+#qr-reader__dashboard_section * {
+    color: var(--text) !important;
+}
+
+#qr-reader button {
+    color: var(--green) !important;
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+}
+
+/* Dark mode scanner */
+body.dark #scanner-modal {
+    background: rgba(0, 0, 0, 0.82);
+}
+
+body.dark .scan-box {
+    background: var(--card);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+body.dark .scan-title {
+    color: #69f0ae;
+}
+
+body.dark .scan-hint {
+    color: var(--text);
+    background: #102016;
+    border-color: var(--border);
+}
+
+body.dark #qr-reader__dashboard_section,
+body.dark #qr-reader__dashboard_section * {
+    color: var(--text) !important;
+}
+
+body.dark #qr-reader button {
+    color: #69f0ae !important;
+    background: #102016 !important;
+    border-color: var(--border) !important;
 }
