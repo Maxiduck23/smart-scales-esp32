@@ -1,6 +1,6 @@
 // Vrátí posledně přidaná jídla uživatele pro výběr na váze
-import supabase from '../supabase.js';
-import { requireDevice } from '../middleware.js';
+import supabase from '../_supabase.js';
+import { requireDevice } from '../_middleware.js';
 
 export default async function handler(req, res) {
   // ESP32 se autentizuje device key, ne JWT

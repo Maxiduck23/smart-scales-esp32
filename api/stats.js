@@ -1,5 +1,5 @@
-import supabase from './supabase.js';
-import { requireAuth } from './middleware.js';
+import supabase from './_supabase.js';
+import { requireAuth } from './_middleware.js';
 
 export default async function handler(req, res) {
     const user = requireAuth(req);

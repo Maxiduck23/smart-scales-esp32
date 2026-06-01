@@ -1,8 +1,8 @@
 // api/weight.js
 // Saves raw scale weight and, when product_id is present, saves a normal meal row.
 
-import supabase from './supabase.js';
-import { requireDevice } from './middleware.js';
+import supabase from './_supabase.js';
+import { requireDevice } from './_middleware.js';
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
