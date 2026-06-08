@@ -3051,3 +3051,177 @@ body.dark #qr-reader button {
     background: #102016 !important;
     border-color: var(--border) !important;
 }
+
+/* ═══════════════════════════════
+   SCANNER MODAL LIGHT/DARK FIX
+   ═══════════════════════════════ */
+
+#scanner-modal {
+    color: var(--text, #1b1b1b);
+}
+
+#scanner-modal * {
+    box-sizing: border-box;
+}
+
+#scanner-modal .scanner-box,
+#scanner-modal .scanner-card,
+#scanner-modal .modal-box,
+#scanner-modal>div {
+    background: var(--card, #ffffff);
+    color: var(--text, #1b1b1b);
+}
+
+#scanner-modal p,
+#scanner-modal label,
+#scanner-modal span,
+#scanner-modal div,
+#scanner-modal .scanner-hint,
+#scanner-modal .scanner-text {
+    color: var(--text, #1b1b1b);
+}
+
+#scanner-modal video {
+    background: #000;
+    border-radius: 10px;
+}
+
+#scanner-modal button {
+    background: var(--card, #ffffff);
+    color: var(--green, #2e7d32);
+    border: 1.5px solid var(--green, #2e7d32);
+}
+
+#scanner-modal button:hover {
+    background: var(--green, #2e7d32);
+    color: #ffffff;
+}
+
+body.dark #scanner-modal .scanner-box,
+body.dark #scanner-modal .scanner-card,
+body.dark #scanner-modal .modal-box,
+body.dark #scanner-modal>div {
+    background: var(--card, #111f14);
+    color: var(--text, #f2fff4);
+}
+
+body.dark #scanner-modal p,
+body.dark #scanner-modal label,
+body.dark #scanner-modal span,
+body.dark #scanner-modal div,
+body.dark #scanner-modal .scanner-hint,
+body.dark #scanner-modal .scanner-text {
+    color: var(--text, #f2fff4);
+}
+
+body.dark #scanner-modal button {
+    background: var(--card, #111f14);
+    color: var(--green, #66bb6a);
+    border-color: var(--green, #66bb6a);
+}
+
+/* ═══════════════════════════════
+   SEARCH RESULTS MOBILE FIX
+   ═══════════════════════════════ */
+
+#search-results {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    color: var(--text, #1b1b1b);
+    position: relative;
+    z-index: 1;
+}
+
+#search-results .loading-text,
+#search-results .search-error,
+#search-results .search-empty {
+    padding: 12px;
+    border-radius: var(--radius-sm, 12px);
+    background: var(--green-light, rgba(46, 125, 50, 0.08));
+    color: var(--text, #1b1b1b);
+    font-size: 14px;
+}
+
+.product-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border, #e0e0e0);
+    color: var(--text, #1b1b1b);
+}
+
+.product-result .product-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-result .product-name {
+    color: var(--text, #1b1b1b);
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.product-result .product-kcal {
+    color: var(--text-2, #555);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.product-result .product-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.product-result .select-product-btn {
+    white-space: nowrap;
+}
+
+.product-img,
+.product-img-placeholder {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.product-img-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green-light, rgba(46, 125, 50, 0.08));
+}
+
+body.dark #search-results,
+body.dark #search-results .loading-text,
+body.dark #search-results .search-error,
+body.dark #search-results .search-empty,
+body.dark .product-result,
+body.dark .product-result .product-name {
+    color: var(--text, #f2fff4);
+}
+
+body.dark .product-result .product-kcal {
+    color: var(--text-2, #b8c8ba);
+}
+
+@media (max-width: 480px) {
+    .product-result {
+        align-items: flex-start;
+    }
+
+    .product-result .product-add {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .product-result .select-product-btn {
+        width: 100%;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
