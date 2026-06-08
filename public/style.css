@@ -3225,3 +3225,209 @@ body.dark .product-result .product-kcal {
         padding-right: 12px;
     }
 }
+
+/* ═══════════════════════════════
+   LIGHT THEME DESKTOP FIX
+   Fix white text / white background
+   ═══════════════════════════════ */
+
+body:not(.dark) {
+    background: #f4f8f4;
+    color: #172617;
+}
+
+/* Основные карточки */
+body:not(.dark) .section-card,
+body:not(.dark) .auth-card,
+body:not(.dark) .topbar,
+body:not(.dark) .product-result,
+body:not(.dark) .macro-box,
+body:not(.dark) .water-card {
+    background: #ffffff;
+    color: #172617;
+    border-color: #d8e6d8;
+}
+
+/* Обычный текст внутри карточек */
+body:not(.dark) .section-card *,
+body:not(.dark) .auth-card *,
+body:not(.dark) .product-result *,
+body:not(.dark) .macro-box *,
+body:not(.dark) .topbar * {
+    color: inherit;
+}
+
+/* Вторичный текст */
+body:not(.dark) .product-kcal,
+body:not(.dark) .macro-lbl,
+body:not(.dark) .bar-nums,
+body:not(.dark) .water-hint,
+body:not(.dark) .water-label,
+body:not(.dark) .loading-text,
+body:not(.dark) .search-empty,
+body:not(.dark) .search-error {
+    color: #4f6b4f;
+}
+
+/* Заголовки */
+body:not(.dark) .section-title,
+body:not(.dark) .product-name,
+body:not(.dark) .auth-title,
+body:not(.dark) .topbar-logo {
+    color: #173b17;
+}
+
+/* Инпуты, select, поля */
+body:not(.dark) input,
+body:not(.dark) select,
+body:not(.dark) textarea {
+    background: #ffffff;
+    color: #172617;
+    border-color: #b9d2b9;
+}
+
+body:not(.dark) input::placeholder,
+body:not(.dark) textarea::placeholder {
+    color: #789078;
+}
+
+body:not(.dark) input:focus,
+body:not(.dark) select:focus,
+body:not(.dark) textarea:focus {
+    border-color: #2e7d32;
+    outline: none;
+}
+
+/* Search results */
+body:not(.dark) #search-results {
+    color: #172617;
+}
+
+body:not(.dark) #search-results .loading-text,
+body:not(.dark) #search-results .search-empty,
+body:not(.dark) #search-results .search-error {
+    background: #eef8ee;
+    color: #274827;
+    border: 1px solid #cfe3cf;
+}
+
+/* Product result на ПК */
+body:not(.dark) .product-result {
+    border-bottom: 1px solid #d8e6d8;
+}
+
+body:not(.dark) .product-img-placeholder {
+    background: #eef8ee;
+    color: #2e7d32;
+}
+
+/* Ghost / icon buttons */
+body:not(.dark) .btn-ghost,
+body:not(.dark) .btn-icon,
+body:not(.dark) .scan-btn,
+body:not(.dark) .manual-open-btn {
+    background: #ffffff;
+    color: #2e7d32;
+    border-color: #2e7d32;
+}
+
+body:not(.dark) .btn-ghost:hover,
+body:not(.dark) .btn-icon:hover,
+body:not(.dark) .scan-btn:hover,
+body:not(.dark) .manual-open-btn:hover {
+    background: #eef8ee;
+    color: #1b5e20;
+}
+
+/* Primary buttons */
+body:not(.dark) .btn-primary {
+    background: #2e7d32;
+    color: #ffffff;
+    border-color: #2e7d32;
+}
+
+body:not(.dark) .btn-primary:hover {
+    background: #1b5e20;
+    color: #ffffff;
+}
+
+/* ═══════════════════════════════
+   SCANNER MODAL LIGHT DESKTOP HARD FIX
+   ═══════════════════════════════ */
+
+body:not(.dark) #scanner-modal {
+    color: #172617 !important;
+}
+
+body:not(.dark) #scanner-modal .scanner-box,
+body:not(.dark) #scanner-modal .scanner-card,
+body:not(.dark) #scanner-modal .modal-box,
+body:not(.dark) #scanner-modal>div {
+    background: #ffffff !important;
+    color: #172617 !important;
+    border-color: #d8e6d8 !important;
+}
+
+body:not(.dark) #scanner-modal p,
+body:not(.dark) #scanner-modal span,
+body:not(.dark) #scanner-modal div,
+body:not(.dark) #scanner-modal label,
+body:not(.dark) #scanner-modal .scanner-hint,
+body:not(.dark) #scanner-modal .scanner-text {
+    color: #172617 !important;
+}
+
+body:not(.dark) #scanner-modal button {
+    background: #ffffff !important;
+    color: #2e7d32 !important;
+    border: 1.5px solid #2e7d32 !important;
+}
+
+body:not(.dark) #scanner-modal button:hover {
+    background: #2e7d32 !important;
+    color: #ffffff !important;
+}
+
+/* ═══════════════════════════════
+   PRODUCT WEIGHT MODAL LIGHT FIX
+   ═══════════════════════════════ */
+
+body:not(.dark) #product-weight-modal {
+    color: #172617;
+}
+
+body:not(.dark) #product-weight-modal .pwm-box {
+    background: #ffffff;
+    color: #172617;
+    border-color: #d8e6d8;
+}
+
+body:not(.dark) .pwm-title {
+    color: #2e7d32;
+}
+
+body:not(.dark) .pwm-product-name,
+body:not(.dark) .pwm-scale-status {
+    color: #4f6b4f;
+}
+
+body:not(.dark) .pwm-tab {
+    background: #ffffff;
+    color: #172617;
+    border-color: #b9d2b9;
+}
+
+body:not(.dark) .pwm-tab.active {
+    background: #eef8ee;
+    color: #2e7d32;
+    border-color: #2e7d32;
+}
+
+body:not(.dark) .pwm-scale-card {
+    background: #ffffff;
+    border-color: #b9d2b9;
+}
+
+body:not(.dark) .pwm-scale-value {
+    color: #2e7d32;
+}
