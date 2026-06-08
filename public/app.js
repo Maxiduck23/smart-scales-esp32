@@ -395,7 +395,6 @@ async function renderDashboard() {
     + '<button class="scan-btn" onclick="openScanner()" title="Skenovat">📷</button>'
     + '<button class="manual-open-btn" onclick="openManualProduct()" title="Přidat vlastní">➕</button>'
     + '</div>'
-    + '<button class="weigh-btn" onclick="openWeighModal()">⚖️ Vážit produkt (senzor nebo ručně)</button>'
     + '<div id="search-results"></div>'
     + '</div>'
     + '<div class="section-card">'
@@ -776,17 +775,22 @@ function renderFavoriteProducts() {
 
     var pid = String(p.id || f.product_id);
 
-    html += '<div class="favorite-item">'
-      + '<div class="favorite-info">'
-      + '<div class="favorite-name">' + escapeHtml(p.name) + '</div>'
-      + '<div class="favorite-meta">' + (p.calories != null ? p.calories : '?') + ' kcal/100g</div>'
-      + '</div>'
-      + '<div class="favorite-actions">'
-      + '<input type="number" class="favorite-grams" data-pid="' + pid + '" value="' + sensorGrams + '" min="1"/>'
-      + '<button class="btn btn-primary btn-sm fav-add-btn" data-pid="' + pid + '">Přidat</button>'
-      + '<button class="btn btn-icon fav-remove-btn" data-pid="' + pid + '" title="Odebrat">✕</button>'
-      + '</div>'
-      + '</div>';
+    productsCache[pid] = p;
+
+    html +=
+      '<div class="favorite-item favorite-mobile-item">' +
+      '<div class="favorite-info">' +
+      '<div class="favorite-name">' + escapeHtml(p.name) + '</div>' +
+      '<div class="favorite-meta">' + (p.calories != null ? p.calories : '?') + ' kcal/100g</div>' +
+      '</div>' +
+
+      '<div class="favorite-actions favorite-actions-mobile">' +
+      '<input type="number" class="favorite-grams" data-pid="' + escapeHtml(pid) + '" value="' + sensorGrams + '" min="1"/>' +
+      '<button class="btn btn-primary btn-sm fav-add-btn" data-pid="' + escapeHtml(pid) + '">Přidat</button>' +
+      '<button class="btn btn-icon fav-weight-btn" data-pid="' + escapeHtml(pid) + '" title="Použít váhu">⚖️</button>' +
+      '<button class="btn btn-icon fav-remove-btn" data-pid="' + escapeHtml(pid) + '" title="Odebrat">✕</button>' +
+      '</div>' +
+      '</div>';
   });
 
   box.innerHTML = html;
@@ -796,13 +800,28 @@ function renderFavoriteProducts() {
       var pid = String(btn.getAttribute('data-pid'));
       var inp = box.querySelector('.favorite-grams[data-pid="' + pid + '"]');
       var grams = parseInt(inp ? inp.value : sensorGrams, 10) || sensorGrams;
+
       addFavoriteMeal(pid, grams);
+    });
+  });
+
+  box.querySelectorAll('.fav-weight-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pid = String(btn.getAttribute('data-pid'));
+
+      var favorite = favoritesCache[pid];
+      if (favorite && favorite.products) {
+        productsCache[pid] = favorite.products;
+      }
+
+      openProductWeightModal(pid);
     });
   });
 
   box.querySelectorAll('.fav-remove-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var pid = String(btn.getAttribute('data-pid'));
+
       removeFavorite(pid);
     });
   });
@@ -919,7 +938,10 @@ function renderProductSelectResults(products, queryLabel) {
       '<div class="product-name">' + escapeHtml(p.name || 'Neznámý produkt') + '</div>' +
       '<div class="product-kcal">' + escapeHtml(macros) + '</div>' +
       '</div>' +
-      '<div class="product-add">' +
+      '<div class="product-add product-actions-mobile">' +
+      '<button class="btn btn-icon btn-sm fav-btn" data-pid="' + escapeHtml(pid) + '" title="Oblíbené">' +
+      (isFavoriteProduct(pid) ? '⭐' : '☆') +
+      '</button>' +
       '<button class="btn btn-primary btn-sm select-product-btn" data-pid="' + escapeHtml(pid) + '">Vybrat</button>' +
       '</div>' +
       '</div>';
@@ -937,6 +959,19 @@ function renderProductSelectResults(products, queryLabel) {
     btn.addEventListener('click', function () {
       var pid = btn.getAttribute('data-pid');
       openProductWeightModal(pid);
+    });
+  });
+
+  results.querySelectorAll('.fav-btn').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      var pid = btn.getAttribute('data-pid');
+
+      await toggleFavorite(pid);
+
+      btn.textContent = isFavoriteProduct(pid) ? '⭐' : '☆';
     });
   });
 }
@@ -969,45 +1004,185 @@ async function addMeal(pid, grams) {
   showToast('✓ ' + (p ? p.name : 'produkt') + ' přidáno (' + grams + ' g)');
   await loadMeals();
 }
+// ── Product weight modal after product selection ─────────────────
+var selectedProductForWeight = null;
+var productWeightPollId = null;
+var productLastSensorGrams = 0;
+
+function getSensorGramsOrDefault() {
+  if (latestSensorGrams && latestSensorGrams > 0) {
+    return Math.round(latestSensorGrams);
+  }
+
+  return 100;
+}
+
+function openProductWeightModal(productId) {
+  productId = String(productId);
+
+  var product = productsCache[productId];
+
+  if (!product) {
+    showToast('❌ Produkt není dostupný v cache');
+    return;
+  }
+
+  selectedProductForWeight = product;
+  productLastSensorGrams = 0;
+
+  closeProductWeightModal();
+
+  var modal = document.createElement('div');
+  modal.id = 'product-weight-modal';
+
+  modal.innerHTML =
+    '<div class="pwm-box">' +
+    '<div class="pwm-handle"></div>' +
+
+    '<div class="pwm-title">Přidat produkt</div>' +
+    '<div class="pwm-product-name">' + escapeHtml(product.name || 'Produkt') + '</div>' +
+
+    '<div class="pwm-tabs">' +
+    '<button class="pwm-tab active" id="pwm-tab-manual" onclick="setProductWeightMode(\'manual\')">✏️ Ručně</button>' +
+    '<button class="pwm-tab" id="pwm-tab-scale" onclick="setProductWeightMode(\'scale\')">⚖️ Použít váhu</button>' +
+    '</div>' +
+
+    '<div class="pwm-pane active" id="pwm-pane-manual">' +
+    '<div class="field">' +
+    '<label>Gramáž (g)</label>' +
+    '<input type="number" id="pwm-manual-grams" value="' + getSensorGramsOrDefault() + '" min="1" placeholder="100">' +
+    '</div>' +
+    '<button class="btn btn-primary" onclick="confirmProductManualWeight()">✓ Přidat do deníku</button>' +
+    '</div>' +
+
+    '<div class="pwm-pane" id="pwm-pane-scale">' +
+    '<div class="pwm-scale-card">' +
+    '<div class="pwm-scale-value" id="pwm-scale-value">--<span>g</span></div>' +
+    '<div class="pwm-scale-status" id="pwm-scale-status">Čekám na váhu...</div>' +
+    '</div>' +
+    '<button class="btn btn-primary" onclick="confirmProductSensorWeight()">✓ Přidat z váhy</button>' +
+    '</div>' +
+
+    '<button class="btn btn-ghost btn-sm pwm-cancel" onclick="closeProductWeightModal()">Zrušit</button>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeProductWeightModal();
+  });
+}
+
+function closeProductWeightModal() {
+  stopProductWeightPolling();
+
+  var modal = document.getElementById('product-weight-modal');
+  if (modal) modal.remove();
+}
+
+function setProductWeightMode(mode) {
+  var manualTab = document.getElementById('pwm-tab-manual');
+  var scaleTab = document.getElementById('pwm-tab-scale');
+
+  var manualPane = document.getElementById('pwm-pane-manual');
+  var scalePane = document.getElementById('pwm-pane-scale');
+
+  if (manualTab) manualTab.classList.toggle('active', mode === 'manual');
+  if (scaleTab) scaleTab.classList.toggle('active', mode === 'scale');
+
+  if (manualPane) manualPane.classList.toggle('active', mode === 'manual');
+  if (scalePane) scalePane.classList.toggle('active', mode === 'scale');
+
+  if (mode === 'scale') {
+    startProductWeightPolling();
+  } else {
+    stopProductWeightPolling();
+  }
+}
+
+function startProductWeightPolling() {
+  stopProductWeightPolling();
+
+  async function pollProductWeight() {
+    var valueEl = document.getElementById('pwm-scale-value');
+    var statusEl = document.getElementById('pwm-scale-status');
+
+    if (!valueEl) {
+      stopProductWeightPolling();
+      return;
+    }
+
+    var data = await api('weight');
+
+    if (data && data.grams != null) {
+      var grams = Math.round(Number(data.grams));
+
+      if (!isNaN(grams) && grams > 0) {
+        productLastSensorGrams = grams;
+        latestSensorGrams = grams;
+        latestSensorAt = Date.now();
+
+        valueEl.innerHTML = grams + '<span>g</span>';
+        if (statusEl) statusEl.textContent = '✓ Váha načtena';
+      } else {
+        valueEl.innerHTML = '0<span>g</span>';
+        if (statusEl) statusEl.textContent = 'Váha ukazuje 0 g';
+      }
+    } else {
+      if (statusEl) statusEl.textContent = 'Čekám na ESP32 váhu...';
+    }
+  }
+
+  pollProductWeight();
+  productWeightPollId = setInterval(pollProductWeight, 700);
+}
+
+function stopProductWeightPolling() {
+  if (productWeightPollId) {
+    clearInterval(productWeightPollId);
+    productWeightPollId = null;
+  }
+}
+
+async function confirmProductManualWeight() {
+  var input = document.getElementById('pwm-manual-grams');
+  var grams = parseInt(input ? input.value : '0', 10);
+
+  await confirmProductWeight(grams);
+}
+
+async function confirmProductSensorWeight() {
+  await confirmProductWeight(productLastSensorGrams);
+}
+
+async function confirmProductWeight(grams) {
+  if (!selectedProductForWeight) {
+    showToast('❌ Nejdřív vyber produkt');
+    return;
+  }
+
+  grams = parseInt(grams, 10);
+
+  if (!grams || grams <= 0) {
+    showToast('⚠ Gramáž musí být větší než 0 g');
+    return;
+  }
+
+  var pid = String(selectedProductForWeight.id);
+
+  await addMeal(pid, grams);
+
+  selectedProductForWeight = null;
+  productLastSensorGrams = 0;
+
+  closeProductWeightModal();
+}
 
 // ── Weight product modal ──────────────────────────────
 var _weightModalTab = 'sensor';
 var _weightModalSearchTimer = null;
 var _weightModalProduct = null;
 var _wmPollId = null;
-
-function openWeighModal() {
-  if (document.getElementById('weigh-modal')) return;
-  var modal = document.createElement('div');
-  modal.id = 'weigh-modal';
-  modal.innerHTML = buildWeighModal();
-  document.body.appendChild(modal);
-
-  modal.addEventListener('click', function (e) { if (e.target === modal) closeWeighModal(); });
-  modal.querySelectorAll('.wm-tab').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      _weightModalTab = btn.dataset.tab;
-      modal.querySelectorAll('.wm-tab').forEach(function (b) { b.classList.remove('active'); });
-      modal.querySelectorAll('.wm-pane').forEach(function (pane) { pane.classList.remove('active'); });
-      btn.classList.add('active');
-      modal.querySelector('.wm-pane[data-pane="' + _weightModalTab + '"]').classList.add('active');
-      if (_weightModalTab === 'sensor') startWeighModalPolling();
-      else stopWeighModalPolling();
-    });
-  });
-
-  var searchInp = modal.querySelector('#wm-search');
-  if (searchInp) {
-    searchInp.addEventListener('input', function () {
-      clearTimeout(_weightModalSearchTimer);
-      _weightModalSearchTimer = setTimeout(function () { doWeighModalSearch(searchInp.value.trim()); }, 400);
-    });
-    searchInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') doWeighModalSearch(searchInp.value.trim()); });
-  }
-
-  renderSelectedWeighProduct();
-  if (_weightModalTab === 'sensor') startWeighModalPolling();
-}
 
 function closeWeighModal() {
   stopWeighModalPolling();
